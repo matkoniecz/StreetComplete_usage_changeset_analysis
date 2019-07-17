@@ -39,6 +39,14 @@ function get_changes_number($changeset_header) {
     }
 }
 
+function get_quest_type($changeset_header) {
+    if (preg_match("/v=\"([^\"]+)\"/", $changeset_header, $matches)) {
+        return $matches[1];
+    } else {
+        return NULL;
+    }
+}
+
 function register_popularity($dict, $index, $number) {
     if (isset($dict[$index])) {
         $dict[$index] += $number;
@@ -49,6 +57,8 @@ function register_popularity($dict, $index, $number) {
 }
 
 $file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-190708.osm");
+
+$outputFile = fopen("output.csv", "w") or die("Unable to open file!");
 
 $popularity = array();
 // based on https://stackoverflow.com/questions/13246597/how-to-read-a-large-file-line-by-line
@@ -91,6 +101,14 @@ while (!$file->eof()) {
             #echo get_changes_number($changeset_header);
             #echo "\n";
             $popularity = register_popularity($popularity, $line, get_changes_number($changeset_header));
+            if(str_begins($line, '<tag k="StreetComplete:quest_type"')){
+                $editor = "StreetComplete";
+            } elseif(str_begins($line, '<tag k="zażółć:quest_type"')){
+                $editor = "StreetComplete";
+            } else {
+                $editor = "?";
+            }
+            fwrite($outputFile, $editor . "," . get_changes_number($changeset_header) . "," . get_quest_type($line) . "\n");
             #var_dump($popularity);
             #echo "\n";
             #echo "\n";
@@ -101,4 +119,5 @@ while (!$file->eof()) {
 var_dump($popularity);
 // Unset the file to call __destruct(), closing the file handle.
 $file = null; 
+fclose($outputFile);
 ?>
