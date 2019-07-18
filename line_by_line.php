@@ -1,6 +1,6 @@
 <?php
 // special thanks to @Zverik for answering https://github.com/Zverik/editor-stats/issues/4 
-// withouth this I would not expect this to be easy to produce this data!
+// without this I would not expect processing such data to be feasible (changeset planet file can be read line by line)!
 
 
 // assumptions
@@ -47,6 +47,14 @@ function get_quest_type($changeset_header) {
     }
 }
 
+function get_changeset_id($changeset_header) {
+    if (preg_match("/id=\"([0-9]+)\"/", $changeset_header, $matches)) {
+        return (int)$matches[1];
+    } else {
+        return 0;
+    }
+}
+
 function register_popularity($dict, $index, $number) {
     if (isset($dict[$index])) {
         $dict[$index] += $number;
@@ -59,6 +67,7 @@ function register_popularity($dict, $index, $number) {
 $file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-190708.osm");
 
 $outputFile = fopen("output.csv", "w") or die("Unable to open file!");
+fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "\n");
 
 $popularity = array();
 // based on https://stackoverflow.com/questions/13246597/how-to-read-a-large-file-line-by-line
@@ -108,7 +117,10 @@ while (!$file->eof()) {
             } else {
                 $editor = "?";
             }
-            fwrite($outputFile, $editor . "," . get_changes_number($changeset_header) . "," . get_quest_type($line) . "\n");
+            $id = get_changeset_id($changeset_header);
+            $count = get_changes_number($changeset_header);
+            $type = get_quest_type($line);
+            fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "\n");
             #var_dump($popularity);
             #echo "\n";
             #echo "\n";
