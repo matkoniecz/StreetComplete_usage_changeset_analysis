@@ -18,15 +18,25 @@ print_r($xml);
 // https://php.net/manual/en/book.curl.php
 // https://stackoverflow.com/questions/3062324/what-is-curl-in-php
 // https://www.php.net/manual/en/curl.examples-basic.php
-$ch = curl_init("https://www.openstreetmap.org/api/0.6/changeset/72280172/download");
-$fp = fopen("api_response.xml", "w");
 
-curl_setopt($ch, CURLOPT_FILE, $fp);
-curl_setopt($ch, CURLOPT_HEADER, 0);
+function download_page($path){
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,$path);
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_FAILONERROR,1);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    $retValue = curl_exec($ch);
+    #$httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $retValue;
+}
 
-curl_exec($ch);
-curl_close($ch);
-fclose($fp);
+$output = download_page("https://www.openstreetmap.org/api/0.6/changeset/72280172/download");
+echo $output;
+echo "\n";
+$xml=simplexml_load_string($output) or die("Error: Cannot create object");
+print_r($xml);
 
 // database
 // https://code.tutsplus.com/tutorials/php-database-access-are-you-doing-it-correctly--net-25338
