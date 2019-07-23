@@ -48,10 +48,18 @@ function get_quest_type($changeset_header) {
 }
 
 function get_changeset_id($changeset_header) {
-    if (preg_match("/id=\"([0-9]+)\"/", $changeset_header, $matches)) {
+    if (preg_match("/ id=\"([0-9]+)\"/", $changeset_header, $matches)) {
         return (int)$matches[1];
     } else {
-        return 0;
+        return -1;
+    }
+}
+
+function get_uid($changeset_header) {
+    if (preg_match("/ uid=\"([0-9]+)\"/", $changeset_header, $matches)) {
+        return (int)$matches[1];
+    } else {
+        return -1;
     }
 }
 
@@ -67,7 +75,7 @@ function register_popularity($dict, $index, $number) {
 $file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-190708.osm");
 
 $outputFile = fopen("output.csv", "w") or die("Unable to open file!");
-fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "\n");
+fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "," . "user_id" . "\n");
 
 $popularity = array();
 // based on https://stackoverflow.com/questions/13246597/how-to-read-a-large-file-line-by-line
@@ -120,7 +128,8 @@ while (!$file->eof()) {
             $id = get_changeset_id($changeset_header);
             $count = get_changes_number($changeset_header);
             $type = get_quest_type($line);
-            fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "\n");
+            $uid = get_uid($changeset_header);
+            fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "," . $uid . "\n");
             #var_dump($popularity);
             #echo "\n";
             #echo "\n";
