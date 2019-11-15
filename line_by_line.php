@@ -14,6 +14,77 @@
 // tags, one in each line follows
 // ends with line including '</changeset>' as sole nonwhitespace text
 // applies
+function main() {
+    $file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-190708.osm");
+
+    $outputFile = fopen("output.csv", "w") or die("Unable to open file!");
+    fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "," . "user_id" . "\n");
+
+    $popularity = array();
+    // based on https://stackoverflow.com/questions/13246597/how-to-read-a-large-file-line-by-line
+    // Loop until we reach the end of the file.
+    while (!$file->eof()) {
+        $line = trim($file->fgets());
+        if ($line == "</changeset>") {
+            #echo $line;
+            #echo "end of a changeset with tags";
+            #echo "\n";
+            #echo "\n";
+            $changeset_header = NULL;
+        } elseif (str_begins($line, "<changeset")) {
+            if(str_ends($line, '">')) {
+                #echo $line;
+                $changeset_header = $line;
+                #echo "new changeset, with tags";
+                #echo "\n";
+                #echo "\n";
+            } else {
+                #echo $line;
+                #echo "new changeset, without tags";
+                #echo "\n";
+                #echo "\n";
+            }
+        } else {
+            if(str_begins($line, '<tag k="created_by"')) {
+                if(contains_substr($line, "StreetComplete") || contains_substr($line, "zażółć")) {
+                    #echo $changeset_header;
+                    #echo "\n";
+                    #echo $line;
+                    #echo "\n";
+                    #echo "created by tag";
+                    #echo "\n";    
+                }
+            } elseif (str_begins($line, '<tag k="StreetComplete:quest_type"') || str_begins($line, '<tag k="zażółć:quest_type"')) {
+                #echo $line;
+                #echo "\n";
+                #echo "quest type tag";
+                #echo get_changes_number($changeset_header);
+                #echo "\n";
+                $popularity = register_popularity($popularity, $line, get_changes_number($changeset_header));
+                if(str_begins($line, '<tag k="StreetComplete:quest_type"')){
+                    $editor = "StreetComplete";
+                } elseif(str_begins($line, '<tag k="zażółć:quest_type"')){
+                    $editor = "StreetComplete";
+                } else {
+                    $editor = "?";
+                }
+                $id = get_changeset_id($changeset_header);
+                $count = get_changes_number($changeset_header);
+                $type = get_quest_type($line);
+                $uid = get_uid($changeset_header);
+                fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "," . $uid . "\n");
+                #var_dump($popularity);
+                #echo "\n";
+                #echo "\n";
+            }
+        }
+    }
+
+    var_dump($popularity);
+    // Unset the file to call __destruct(), closing the file handle.
+    $file = null; 
+    fclose($outputFile);
+}
 
 // from https://www.php.net/manual/en/function.substr-compare.php
 function str_begins($haystack, $needle) {
@@ -72,73 +143,5 @@ function register_popularity($dict, $index, $number) {
     return $dict;
 }
 
-$file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-190708.osm");
-
-$outputFile = fopen("output.csv", "w") or die("Unable to open file!");
-fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "," . "user_id" . "\n");
-
-$popularity = array();
-// based on https://stackoverflow.com/questions/13246597/how-to-read-a-large-file-line-by-line
-// Loop until we reach the end of the file.
-while (!$file->eof()) {
-    $line = trim($file->fgets());
-    if ($line == "</changeset>") {
-        #echo $line;
-        #echo "end of a changeset with tags";
-        #echo "\n";
-        #echo "\n";
-        $changeset_header = NULL;
-    } elseif (str_begins($line, "<changeset")) {
-        if(str_ends($line, '">')) {
-            #echo $line;
-            $changeset_header = $line;
-            #echo "new changeset, with tags";
-            #echo "\n";
-            #echo "\n";
-        } else {
-            #echo $line;
-            #echo "new changeset, without tags";
-            #echo "\n";
-            #echo "\n";
-        }
-    } else {
-        if(str_begins($line, '<tag k="created_by"')) {
-            if(contains_substr($line, "StreetComplete") || contains_substr($line, "zażółć")) {
-                #echo $changeset_header;
-                #echo "\n";
-                #echo $line;
-                #echo "\n";
-                #echo "created by tag";
-                #echo "\n";    
-            }
-        } elseif (str_begins($line, '<tag k="StreetComplete:quest_type"') || str_begins($line, '<tag k="zażółć:quest_type"')) {
-            #echo $line;
-            #echo "\n";
-            #echo "quest type tag";
-            #echo get_changes_number($changeset_header);
-            #echo "\n";
-            $popularity = register_popularity($popularity, $line, get_changes_number($changeset_header));
-            if(str_begins($line, '<tag k="StreetComplete:quest_type"')){
-                $editor = "StreetComplete";
-            } elseif(str_begins($line, '<tag k="zażółć:quest_type"')){
-                $editor = "StreetComplete";
-            } else {
-                $editor = "?";
-            }
-            $id = get_changeset_id($changeset_header);
-            $count = get_changes_number($changeset_header);
-            $type = get_quest_type($line);
-            $uid = get_uid($changeset_header);
-            fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "," . $uid . "\n");
-            #var_dump($popularity);
-            #echo "\n";
-            #echo "\n";
-        }
-    }
-}
-
-var_dump($popularity);
-// Unset the file to call __destruct(), closing the file handle.
-$file = null; 
-fclose($outputFile);
+main()
 ?>
