@@ -4,11 +4,10 @@ Changeset file can be downloaded from [https://planet.osm.org/](https://planet.o
 
 In this case "Latest Weekly Changesets" file is needed. It is not huge and can be easily processed line by line.
 
-It can be downloaded using `curl` from one of mirrors, for example
-`curl -o changesets-190708.osm.bz2 https://ftp5.gwdg.de/pub/misc/openstreetmap/planet.openstreetmap.org/planet/2019/changesets-190708.osm.bz2`
+It can be downloaded using `curl` from one of [mirrors](https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading), for example
+`curl -o changesets-latest.osm.bz2 https://ftp.nluug.nl/maps/planet.openstreetmap.org/planet/changesets-latest.osm.bz2`
 
-The file should be unarchived.
-
+The file should be unarchived to allow processing.
 
 Data in the file looks like this
 
