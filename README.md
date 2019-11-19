@@ -23,9 +23,15 @@ Note that curling from planet directly is likely to be flustrating, as it redire
 
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
 
+`tail -n 2000000` may be used to extract just group of last changesets - in late 2019 it was about one week of activity.
+
 ## Running script
 
 `php line_by_line.php`
+
+## Results
+
+It will write to `output.csv` file in format making futher processing easy. It will also show in the stdout very basic statistics collected during run.
 
 # changesets-latest file
 
