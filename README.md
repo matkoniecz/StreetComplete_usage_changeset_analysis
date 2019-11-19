@@ -7,6 +7,16 @@ In this case "Latest Weekly Changesets" file is needed. It is not huge and can b
 It can be downloaded using `curl` from one of [mirrors](https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading), for example
 `curl -o changesets-latest.osm.bz2 https://ftp.nluug.nl/maps/planet.openstreetmap.org/planet/changesets-latest.osm.bz2`
 
+or
+
+`curl -o changesets-latest.osm.bz2 https://ftp.osuosl.org/pub/openstreetmap/planet/changesets-latest.osm.bz2`
+
+or
+
+`curl -o changesets-latest.osm.bz2 https://free.nchc.org.tw/osm.planet/planet/changesets-latest.osm.bz2`
+
+Note that curling from planet directly is likely to be flustrating, as it redirects first from `changesets-latest` to specific date and then to one of mirrors.
+
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
 
 Data in the file looks like this
