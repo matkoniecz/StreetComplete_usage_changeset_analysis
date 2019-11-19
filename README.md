@@ -1,4 +1,8 @@
-This script is processing changeset planet file.
+This script is processing changeset planet file and gives statistics how StreetComplete is used.
+
+# Usage
+
+## Obtaining input data
 
 Changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
 
@@ -18,6 +22,12 @@ or
 Note that curling from planet directly is likely to be flustrating, as it redirects first from `changesets-latest` to specific date and then to one of mirrors.
 
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
+
+## Running script
+
+`php line_by_line.php`
+
+# changesets-latest file
 
 Data in the file looks like this
 
