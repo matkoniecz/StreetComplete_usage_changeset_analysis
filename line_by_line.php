@@ -15,7 +15,7 @@
 // ends with line including '</changeset>' as sole nonwhitespace text
 // applies
 function main() {
-    $file = new SplFileObject("/media/mateusz/5bfa9dfc-ed86-4d19-ac36-78df1060707c/changesets-latest.osm");
+    $file = new SplFileObject("changesets-latest.osm");
 
     $outputFile = fopen("output.csv", "w") or die("Unable to open file!");
     fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "," . "user_id" . "\n");
