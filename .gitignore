@@ -1,2 +1,4 @@
 *.csv
 *.xml
+*.osm
+*.bz2
