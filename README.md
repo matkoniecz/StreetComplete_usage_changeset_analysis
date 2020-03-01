@@ -1,15 +1,26 @@
 This script is processing changeset planet file and gives statistics how StreetComplete is used.
 
+This script is published as-is, it was used solely by author.
+
+Feel free to open PRs or create issues if something may be improved to make it more useful for you.
+
+# Output
+
 # Usage
 
 ## Obtaining input data
+
+### Download
 
 Changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
 
 In this case "Latest Weekly Changesets" file is needed. It is not huge and can be easily processed line by line.
 
 It can be downloaded using `curl` from one of [mirrors](https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading), for example
+
 `curl -o changesets-latest.osm.bz2 https://ftp.nluug.nl/maps/planet.openstreetmap.org/planet/changesets-latest.osm.bz2`
+
+This one may start slowly, but later it gets faster and completes download in about 45 minutes to download 3.2 GB file, what is faster than ones listed below - at least for me.
 
 or
 
@@ -19,15 +30,24 @@ or
 
 `curl -o changesets-latest.osm.bz2 https://free.nchc.org.tw/osm.planet/planet/changesets-latest.osm.bz2`
 
-Note that curling from planet directly is likely to be flustrating, as it redirects first from `changesets-latest` to specific date and then to one of mirrors.
+Note that curling from the official planet site directly is likely to be flustrating, as it redirects first from `changesets-latest` to specific date and then to one of mirrors.
+
+### Unpack
 
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
+
+
+### Optional using just latest data
 
 `tail -n 2000000` may be used to extract just group of last changesets - in late 2019 it was about one week of activity.
 
 ## Running script
 
 `php line_by_line.php`
+
+Note that you may need to change location of input file.
+
+Note that as written it is merging data for StreetComplete and its fork Zażółć (this private fork is used by a single but quite active user). Depending on what you want to achieve you may want to modify script to remove this merge.
 
 ## Results
 
