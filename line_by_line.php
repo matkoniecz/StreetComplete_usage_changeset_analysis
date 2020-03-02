@@ -60,7 +60,6 @@ function main($filename) {
                 #echo "quest type tag";
                 #echo get_changes_number($changeset_header);
                 #echo "\n";
-                $popularity = register_popularity($popularity, $line, get_changes_number($changeset_header));
                 if(str_begins($line, '<tag k="StreetComplete:quest_type"')){
                     $editor = "StreetComplete";
                 } elseif(str_begins($line, '<tag k="zażółć:quest_type"')){
@@ -73,6 +72,7 @@ function main($filename) {
                 $type = get_quest_type($line);
                 $uid = get_uid($changeset_header);
                 fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "," . $uid . "\n");
+                $popularity = register_popularity($popularity, $type, get_changes_number($changeset_header));
                 #var_dump($popularity);
                 #echo "\n";
                 #echo "\n";
@@ -81,8 +81,7 @@ function main($filename) {
     }
 
     arsort($popularity);
-    foreach ($popularity as $quest_tag => $total_edits) {
-        $quest_identifier = quest_tag_to_identifier($quest_tag);
+    foreach ($popularity as $quest_identifier => $total_edits) {
         echo "$quest_identifier : $total_edits\n";
     }
 
@@ -91,8 +90,7 @@ function main($filename) {
     echo("\n");
     echo "| QuestCode        | Total modified elements           |\n";
     echo "| ------------- |-------------|\n";
-    foreach ($popularity as $quest_tag => $total_edits) {
-        $quest_identifier = quest_tag_to_identifier($quest_tag);
+    foreach ($popularity as $quest_identifier => $total_edits) {
         echo "| $quest_identifier | $total_edits |\n";
     }
     echo("\n");
@@ -100,8 +98,7 @@ function main($filename) {
     echo("\n");
     echo "| QuestCode        | Total modified elements           |\n";
     echo "| ------------- |-------------|\n";
-    foreach ($popularity as $quest_tag => $total_edits) {
-        $quest_identifier = quest_tag_to_identifier($quest_tag);
+    foreach ($popularity as $quest_identifier => $total_edits) {
         if ($total_edits >= 4000) {
             echo "| $quest_identifier | ". (int)($total_edits/1000) . "k |\n";
         } else {
