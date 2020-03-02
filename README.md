@@ -18,6 +18,20 @@ Usage of RAM and CPU is minimal as file is processed line by line and contains o
 
 # Output
 
+Written to `output.csv` file. It will contain list of changesets with relevant data, in form easier for further processing.
+
+For StreetComplete it can be easily open in LibreOffice and analysed with pivot tables.
+
+```
+changeset_id,editor,changed_objects,quest_type,user_id
+44058565,StreetComplete,1,AddOpeningHours,1205786
+44059759,StreetComplete,1,AddOpeningHours,1205786
+44067748,StreetComplete,1,AddOpeningHours,1205786
+(...)
+```
+
+Script will also print to output statistics about total edits done per quest type.
+
 # Usage
 
 ## Obtaining input data
