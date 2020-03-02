@@ -1,8 +1,20 @@
 This script is processing changeset planet file and gives statistics how StreetComplete is used.
 
+It processes metada of all changesets ever made and lists interesting ones (made with treetComplete) into csv file for further analysis.
+
+# Disclaimer
+
 This script is published as-is, it was used solely by author.
 
 Feel free to open PRs or create issues if something may be improved to make it more useful for you.
+
+# Hardware requirements
+
+Unlike immporting full planet, processing this file has minimal hardware requirements.
+
+Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
+
+Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing typical bloated web site.
 
 # Output
 
@@ -35,6 +47,8 @@ Note that curling from the official planet site directly is likely to be flustra
 ### Unpack
 
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
+
+Unpacking requires 34 GB, as of early 2020.
 
 
 ### Optional using just latest data
