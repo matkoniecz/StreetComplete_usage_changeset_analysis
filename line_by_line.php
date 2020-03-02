@@ -14,8 +14,8 @@
 // tags, one in each line follows
 // ends with line including '</changeset>' as sole nonwhitespace text
 // applies
-function main() {
-    $file = new SplFileObject("changesets-latest.osm");
+function main($filename) {
+    $file = new SplFileObject($filename);
 
     $outputFile = fopen("output.csv", "w") or die("Unable to open file!");
     fwrite($outputFile, "changeset_id" . "," . "editor" . "," . "changed_objects" . "," . "quest_type" . "," . "user_id" . "\n");
@@ -143,5 +143,5 @@ function register_popularity($dict, $index, $number) {
     return $dict;
 }
 
-main()
+main($argv[1])
 ?>

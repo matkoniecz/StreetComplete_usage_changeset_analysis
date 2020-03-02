@@ -71,9 +71,7 @@ Unpacking requires 34 GB, as of early 2020.
 
 ## Running script
 
-`php line_by_line.php`
-
-Note that you may need to change location of input file.
+`php line_by_line.php "/location_of_input_file/changesets-latest.osm"`
 
 Note that as written it is merging data for StreetComplete and its fork Zażółć (this private fork is used by a single but quite active user). Depending on what you want to achieve you may want to modify script to remove this merge.
 
