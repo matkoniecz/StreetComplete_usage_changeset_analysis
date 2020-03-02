@@ -80,10 +80,43 @@ function main($filename) {
         }
     }
 
-    var_dump($popularity);
+    arsort($popularity);
+    foreach ($popularity as $quest_tag => $total_edits) {
+        $quest_identifier = quest_tag_to_identifier($quest_tag);
+        echo "$quest_identifier : $total_edits\n";
+    }
+
+    echo("\n");
+    echo("\n");
+    echo("\n");
+    echo "| QuestCode        | Total modified elements           |\n";
+    echo "| ------------- |-------------|\n";
+    foreach ($popularity as $quest_tag => $total_edits) {
+        $quest_identifier = quest_tag_to_identifier($quest_tag);
+        echo "| $quest_identifier | $total_edits |\n";
+    }
+    echo("\n");
+    echo("\n");
+    echo("\n");
+    echo "| QuestCode        | Total modified elements           |\n";
+    echo "| ------------- |-------------|\n";
+    foreach ($popularity as $quest_tag => $total_edits) {
+        $quest_identifier = quest_tag_to_identifier($quest_tag);
+        if ($total_edits >= 4000) {
+            echo "| $quest_identifier | ". (int)($total_edits/1000) . "k |\n";
+        } else {
+            echo "| $quest_identifier | $total_edits |\n";
+        }
+    }
+
     // Unset the file to call __destruct(), closing the file handle.
     $file = null; 
     fclose($outputFile);
+}
+
+function quest_tag_to_identifier($quest_tag) {
+    $left_stripped = str_replace("<tag k=\"StreetComplete:quest_type\" v=\"", "", $quest_tag);
+    return str_replace('"/>', '', $left_stripped);
 }
 
 // from https://www.php.net/manual/en/function.substr-compare.php
