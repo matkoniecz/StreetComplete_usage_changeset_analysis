@@ -1,6 +1,6 @@
 This script is processing changeset planet file and gives statistics how StreetComplete is used.
 
-It processes metada of all changesets ever made and lists interesting ones (made with treetComplete) into csv file for further analysis.
+It processes metada of all changesets ever made and lists interesting ones (made with Streetcomplete) into csv file for further analysis.
 
 # Disclaimer
 
