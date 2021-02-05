@@ -36,6 +36,12 @@ Script will also print to output statistics about total edits done per quest typ
 
 ## Obtaining input data
 
+### Torrenting
+
+Warning: untested. Additional flags may be needed. Manual stop may be needed.
+
+`aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent`
+
 ### Download
 
 Changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
