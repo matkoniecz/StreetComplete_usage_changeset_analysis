@@ -10,7 +10,7 @@ Feel free to open PRs or create issues if something may be improved to make it m
 
 # Hardware requirements
 
-Unlike immporting full planet, processing this file has minimal hardware requirements.
+Unlike importing full planet, processing this file has minimal hardware requirements.
 
 Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
 
