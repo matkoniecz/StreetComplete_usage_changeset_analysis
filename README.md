@@ -105,3 +105,7 @@ or
 ```
 
 for early changesets without tags.
+
+# See also 
+
+[https://github.com/amandasaurus/2021-osm-street-complete-edits](https://github.com/amandasaurus/2021-osm-street-complete-edits) - scripts for finding out how many people have used StreetComplete to edit OSM in an area 
