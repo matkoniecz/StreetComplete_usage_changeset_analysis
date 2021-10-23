@@ -35,12 +35,15 @@ Script will also print to output statistics about total edits done per quest typ
 # Usage
 
 ## Obtaining input data
+In my experience torrenting is preferred method, it downloads data very quickly.
 
 ### Torrenting
 
-Warning: untested. Additional flags may be needed. Manual stop may be needed.
-
 `aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent`
+
+This will donwload data and continue seeding allowing others to download it.
+
+Use `--seed-time=0` parameter to stop seeding after download.
 
 ### Download
 
