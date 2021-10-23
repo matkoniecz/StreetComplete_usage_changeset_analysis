@@ -2,19 +2,38 @@ This script is processing changeset planet file and gives statistics how StreetC
 
 It processes metada of all changesets ever made and lists interesting ones (made with Streetcomplete) into csv file for further analysis.
 
-# Hardware requirements
+# Summary
 
-Unlike importing full planet, processing this file has minimal hardware requirements.
+Explanation and variants in sections below.
 
-Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
+```
+# go to location where data should be processed (replace as needed)
+cd /media/mateusz/OSM_cache
 
-Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing a typical bloated web site.
+# get data and start seeding
+aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent
+
+# unpack
+bzip2 -dk changesets-*.osm.bz2
+```
 
 # Output
 
-Written to `output.csv` file. It will contain list of changesets with relevant data, in form easier for further processing.
+## line_by_line.php
+
+Reads data and filters to include just StreetComplete edits.
+
+Written to `output.csv` file. Output is in CSV for further processing.
 
 For StreetComplete it can be easily open in LibreOffice and analysed with pivot tables.
+
+Contains
+* changeset_id
+* editor
+* changed_objects
+* quest_type
+* user_id
+
 
 ```
 changeset_id,editor,changed_objects,quest_type,user_id
@@ -25,6 +44,14 @@ changeset_id,editor,changed_objects,quest_type,user_id
 ```
 
 Script will also print to output statistics about total edits done per quest type.
+
+# Hardware requirements
+
+Unlike importing full planet, processing this file has minimal hardware requirements.
+
+Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
+
+Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing a typical bloated web site.
 
 # Usage
 
@@ -39,7 +66,9 @@ This will download data and continue seeding allowing others to download it.
 
 Use `--seed-time=0` parameter to stop seeding after download.
 
-### Download
+Downloaded within minutes.
+
+### Curl
 
 Changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
 
@@ -63,7 +92,9 @@ Note that curling from the official planet site directly is likely to be flustra
 
 ### Unpack
 
-The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`.
+The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`
+
+`bzip2 -dk changesets-*.osm.bz2` is useful when you have single file with a specific date in filename
 
 Unpacking requires 34 GB, as of early 2020.
 
