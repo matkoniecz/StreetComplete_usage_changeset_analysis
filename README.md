@@ -14,7 +14,7 @@ Unlike importing full planet, processing this file has minimal hardware requirem
 
 Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
 
-Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing typical bloated web site.
+Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing a typical bloated web site.
 
 # Output
 
@@ -41,7 +41,7 @@ In my experience torrenting is preferred method, it downloads data very quickly.
 
 `aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent`
 
-This will donwload data and continue seeding allowing others to download it.
+This will download data and continue seeding allowing others to download it.
 
 Use `--seed-time=0` parameter to stop seeding after download.
 
@@ -86,7 +86,7 @@ Note that as written it is merging data for StreetComplete and its fork Zażół
 
 ## Results
 
-It will write to `output.csv` file in format making futher processing easy. It will also show in the stdout very basic statistics collected during run.
+It will write to `output.csv` file in format making further processing easy. It will also show in the stdout very basic statistics collected during run.
 
 # changesets-latest file
 
@@ -109,6 +109,6 @@ or
 
 for early changesets without tags.
 
-# See also 
+# See also
 
-[https://github.com/amandasaurus/2021-osm-street-complete-edits](https://github.com/amandasaurus/2021-osm-street-complete-edits) - scripts for finding out how many people have used StreetComplete to edit OSM in an area 
+[https://github.com/amandasaurus/2021-osm-street-complete-edits](https://github.com/amandasaurus/2021-osm-street-complete-edits) - scripts for finding out how many people have used StreetComplete to edit OSM in an area
