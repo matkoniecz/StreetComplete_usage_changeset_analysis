@@ -2,12 +2,6 @@ This script is processing changeset planet file and gives statistics how StreetC
 
 It processes metada of all changesets ever made and lists interesting ones (made with Streetcomplete) into csv file for further analysis.
 
-# Disclaimer
-
-This script is published as-is, it was used solely by author.
-
-Feel free to open PRs or create issues if something may be improved to make it more useful for you.
-
 # Hardware requirements
 
 Unlike importing full planet, processing this file has minimal hardware requirements.
@@ -112,3 +106,9 @@ for early changesets without tags.
 # See also
 
 [https://github.com/amandasaurus/2021-osm-street-complete-edits](https://github.com/amandasaurus/2021-osm-street-complete-edits) - scripts for finding out how many people have used StreetComplete to edit OSM in an area
+
+# Disclaimer
+
+This script is published as-is, it was used solely by author.
+
+Feel free to open PRs or create issues if something may be improved to make it more useful for you.
