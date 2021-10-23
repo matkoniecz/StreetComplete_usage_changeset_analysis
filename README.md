@@ -7,7 +7,7 @@ It processes metada of all changesets ever made and lists interesting ones (made
 Explanation and variants in sections below.
 
 ```
-# go to location where data should be processed (replace as needed)
+# go to location where data should be processed (replace path as needed)
 cd /media/mateusz/OSM_cache
 
 # get data and start seeding
@@ -15,6 +15,12 @@ aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent
 
 # unpack
 bzip2 -dk changesets-*.osm.bz2
+
+# get just latest data
+tail -n 2000000 changesets-*.osm > just_latest_changesets.osm
+
+# actually run script, from where script is (modify path as needed)
+php line_by_line.php "/media/mateusz/OSM_cache/just_latest_changesets.osm"
 ```
 
 # Output
@@ -45,11 +51,15 @@ changeset_id,editor,changed_objects,quest_type,user_id
 
 Script will also print to output statistics about total edits done per quest type.
 
+# Dependecies
+
+PHP is needed to run the script.
+
 # Hardware requirements
 
 Unlike importing full planet, processing this file has minimal hardware requirements.
 
-Some free space will be required (40 GB should be enough - as of early 2020), PHP to run script.
+Some free space will be required. But just 60 GB should be enough - as of 2021.
 
 Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing a typical bloated web site.
 
@@ -102,6 +112,8 @@ Unpacking requires 34 GB, as of early 2020.
 ### Optional using just latest data
 
 `tail -n 2000000` may be used to extract just group of last changesets - in late 2019 it was about one week of activity.
+
+Note that it is safe as each change is in own line and this script parses input lane by lane and does not need a valid XML as an input.
 
 ## Running script
 
