@@ -1,11 +1,5 @@
 <?php
-function get_changeset_id($changeset_header) {
-    if (preg_match("/id=\"([0-9]+)\"/", $changeset_header, $matches)) {
-        return (int)$matches[1];
-    } else {
-        return 0;
-    }
-}
+require_once('../extracting_data_from_xml_line.php');
 
 function test($input, $expected) {
     if (get_changeset_id($input) !== $expected ) {

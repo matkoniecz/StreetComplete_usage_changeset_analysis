@@ -1,13 +1,5 @@
 <?php
-function get_quest_type($changeset_header) {
-    if (preg_match("/v=\"([^\"]+)\"/", $changeset_header, $matches)) {
-        #print_r ($matches);
-        #print_r ($matches[1]);
-        return $matches[1];
-    } else {
-        return NULL;
-    }
-}
+require_once('../extracting_data_from_xml_line.php');
 
 function test($input, $expected) {
     if (get_quest_type($input) !== $expected ) {
