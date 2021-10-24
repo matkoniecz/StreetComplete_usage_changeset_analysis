@@ -27,22 +27,16 @@ function main($filename) {
         $line = trim($file->fgets());
         if ($line == "</changeset>") {
             #echo $line;
-            #echo "end of a changeset with tags";
-            #echo "\n";
-            #echo "\n";
+            #echo "end of a changeset with tags\n\n";
             $changeset_header = NULL;
         } elseif (str_begins($line, "<changeset")) {
             if(str_ends($line, '">')) {
                 #echo $line;
                 $changeset_header = $line;
-                #echo "new changeset, with tags";
-                #echo "\n";
-                #echo "\n";
+                #echo "new changeset, with tags\n\n";
             } else {
                 #echo $line;
-                #echo "new changeset, without tags";
-                #echo "\n";
-                #echo "\n";
+                #echo "new changeset, without tags\n\n";
             }
         } else {
             if(str_begins($line, '<tag k="created_by"')) {
@@ -51,8 +45,7 @@ function main($filename) {
                     #echo "\n";
                     #echo $line;
                     #echo "\n";
-                    #echo "created by tag";
-                    #echo "\n";    
+                    #echo "created by tag\n";
                 }
             } elseif (str_begins($line, '<tag k="StreetComplete:quest_type"') || str_begins($line, '<tag k="zażółć:quest_type"')) {
                 #echo $line;
@@ -74,8 +67,7 @@ function main($filename) {
                 fwrite($outputFile, $id . "," . $editor . "," . $count . "," . $type . "," . $uid . "\n");
                 $popularity = register_popularity($popularity, $type, get_changes_number($changeset_header));
                 #var_dump($popularity);
-                #echo "\n";
-                #echo "\n";
+                #echo "\n\n";
             }
         }
     }
