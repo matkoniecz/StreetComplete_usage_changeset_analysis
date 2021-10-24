@@ -1,4 +1,10 @@
-*.csv
-*.xml
+# input
 *.osm
 *.bz2
+
+# output
+*.csv
+*.xml
+
+# processed output
+*.ods
