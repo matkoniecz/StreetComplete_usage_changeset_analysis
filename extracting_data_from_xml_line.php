@@ -72,4 +72,12 @@ function get_uid($changeset_header) {
     }
 }
 
+function get_changeset_creation_date($changeset_header) {
+    if (preg_match("/ created_at=\"([^\"]+)\"/", $changeset_header, $matches)) {
+        return $matches[1];
+    } else {
+        return -1;
+    }
+}
+
 ?>
