@@ -97,5 +97,14 @@ function main($filename) {
     fclose($outputFile);
 }
 
+function register_popularity($dict, $index, $number) {
+    if (isset($dict[$index])) {
+        $dict[$index] += $number;
+    } else {
+        $dict[$index] = $number;
+    }
+    return $dict;
+}
+
 main($argv[1])
 ?>
