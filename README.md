@@ -20,12 +20,12 @@ bzip2 -dk changesets-*.osm.bz2
 tail -n 2000000 changesets-*.osm > just_latest_changesets.osm
 
 # actually run script, from where script is (modify path as needed)
-php line_by_line.php "/media/mateusz/OSM_cache/just_latest_changesets.osm"
+php streetcomplete_edits_generate_csv_and_make_quest_summary.php "/media/mateusz/OSM_cache/just_latest_changesets.osm"
 ```
 
 # Output
 
-## line_by_line.php
+## streetcomplete_edits_generate_csv_and_make_quest_summary.php
 
 Reads data and filters to include just StreetComplete edits.
 
@@ -117,7 +117,7 @@ Note that it is safe as each change is in own line and this script parses input 
 
 ## Running script
 
-`php line_by_line.php "/location_of_input_file/changesets-latest.osm"`
+`php streetcomplete_edits_generate_csv_and_make_quest_summary.php "/location_of_input_file/changesets-latest.osm"`
 
 Note that as written it is merging data for StreetComplete and its fork Zażółć (this private fork is used by a single but quite active user). Depending on what you want to achieve you may want to modify script to remove this merge.
 
