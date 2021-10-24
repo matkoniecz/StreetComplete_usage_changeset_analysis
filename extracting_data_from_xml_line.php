@@ -11,9 +11,17 @@
 // ends with line including '</changeset>' as sole nonwhitespace text
 // applies
 
-function quest_tag_to_identifier($quest_tag) {
-    $left_stripped = str_replace("<tag k=\"StreetComplete:quest_type\" v=\"", "", $quest_tag);
+function value_of_key($line, $tag) {
+    $left_stripped = str_replace("<tag k=\"" . $tag . "\" v=\"", "", $line);
     return str_replace('"/>', '', $left_stripped);
+}
+
+function quest_tag_to_identifier($line) {
+    return value_of_key($line, "StreetComplete:quest_type");
+}
+
+function created_by_tag_to_identifier($line) {
+    return value_of_key($line, "created_by");
 }
 
 // from https://www.php.net/manual/en/function.substr-compare.php
