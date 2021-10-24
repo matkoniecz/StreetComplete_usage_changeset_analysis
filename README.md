@@ -110,12 +110,12 @@ The file should be unarchived to allow processing, with something like `bzip2 -d
 
 `bzip2 -dk changesets-*.osm.bz2` is useful when you have single file with a specific date in filename
 
-Unpacking requires 34 GB, as of early 2020.
+Unpacked file requires 50 GB, as of late 2021.
 
 
 ### Optional using just latest data
 
-`tail -n 2000000` may be used to extract just group of last changesets - in late 2019 it was about one week of activity.
+`tail -n 2000000` may be used to extract just group of last changesets - in late 2021 it was about one week of activity.
 
 Note that it is safe as each change is in own line and this script parses input lane by lane and does not need a valid XML as an input.
 
