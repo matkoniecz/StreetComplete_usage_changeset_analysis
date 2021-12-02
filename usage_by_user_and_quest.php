@@ -16,7 +16,7 @@ function main() {
         fclose($handle);
     }
     echo "csv loaded";
-    $user_count = 3000; //count_of_user_who_ever_edited($usage);
+    $user_count = count_of_user_who_ever_edited($usage);
     echo count_of_user_who_ever_edited($usage) . "\n\n";
     foreach ($usage as $quest_id => $popularity_info) {
         $usage_numbers_by_user = array();
