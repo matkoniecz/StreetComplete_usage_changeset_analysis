@@ -180,6 +180,6 @@ for early changesets without tags.
 
 # Disclaimer
 
-This script is published as-is, it was used solely by author.
+This script is published as-is. It was used solely by author as far as author knows (PR removing that disclaimer is welcome if you used it succesfully).
 
 Feel free to open PRs or create issues if something may be improved to make it more useful for you.
