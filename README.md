@@ -134,9 +134,7 @@ Note that curling from the official planet site directly is likely to be frustra
 
 The file should be unarchived to allow processing, with something like `bzip2 -dk changesets-latest.osm.bz2`
 
-`bzip2 -dk changesets-*.osm.bz2` is useful when you have single file with a specific date in filename
-
-Unpacked file requires 50 GB, as of late 2021.
+`bzip2 -dk changesets-*.osm.bz2` is useful when you have single file with a specific date in filename.
 
 
 ### Optional using just latest data
