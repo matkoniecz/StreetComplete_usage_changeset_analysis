@@ -1,4 +1,4 @@
-This script is processing changeset planet file and gives statistics on how [StreetComplete](https://github.com/streetcomplete/StreetComplete) is used.
+This script is processing a changeset planet file and gives statistics on how [StreetComplete](https://github.com/streetcomplete/StreetComplete) is used.
 
 It processes metadata of all changesets ever made and lists interesting ones (=made with StreetComplete) into a CSV file for further analysis.
 
@@ -6,7 +6,7 @@ It processes metadata of all changesets ever made and lists interesting ones (=m
 
 Explanation and variants in sections below.
 
-```
+```sh
 # go to the location where data should be processed (replace path as needed)
 cd /media/mateusz/OSM_cache
 
@@ -47,7 +47,7 @@ Contains
 * user_id
 
 
-```
+```csv
 changeset_id,editor,changed_objects,quest_type,user_id
 44058565,StreetComplete,1,AddOpeningHours,1205786
 44059759,StreetComplete,1,AddOpeningHours,1205786
@@ -74,7 +74,7 @@ Contains
 * how many objects were affected
 * user_id
 
-```
+```csv
 changeset_id,created_by,creation_date,changed_objects,user_id
 112350666,"Level0 v1.2",2021-10-10T22:27:07Z,0,3476229
 112350667,"StreetComplete 35.0",2021-10-10T22:27:08Z,10,5687816
@@ -96,7 +96,7 @@ Usage of RAM and CPU is minimal as file is processed line by line and contains o
 # Usage
 
 ## Obtaining input data
-In my experience torrenting is preferred method, it downloads data very quickly.
+In my experience torrenting is the preferred method as it downloads data very quickly.
 
 ### Torrenting
 
@@ -110,15 +110,15 @@ Downloaded within minutes.
 
 ### Curl
 
-Changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
+The changeset file can be downloaded from [https://planet.osm.org/](https://planet.osm.org/)
 
-In this case "Latest Weekly Changesets" file is needed. It is not huge and can be easily processed line by line.
+In this case the "Latest Weekly Changesets" file is needed. It is not huge and can be easily processed line by line.
 
-It can be downloaded using `curl` from one of [mirrors](https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading), for example
+It can be downloaded using `curl` from one of the [mirrors](https://wiki.openstreetmap.org/wiki/Planet.osm#Downloading), for example
 
 `curl -o changesets-latest.osm.bz2 https://ftp.nluug.nl/maps/planet.openstreetmap.org/planet/changesets-latest.osm.bz2`
 
-This one may start slowly, but later it gets faster and completes download in about 45 minutes to download 3.2 GB file, which was faster than ones listed below - at least for me.
+This one may start slowly, but later it gets faster and completes the download of a 3.2 GB file in about 45 minutes, which was faster than the ones listed below - at least for me.
 
 or
 
@@ -128,7 +128,7 @@ or
 
 `curl -o changesets-latest.osm.bz2 https://free.nchc.org.tw/osm.planet/planet/changesets-latest.osm.bz2`
 
-Note that curling from the official planet site directly is likely to be frustrating, as it redirects first from `changesets-latest` to specific date and then to one of mirrors.
+Note that curling from the official planet site directly is likely to be frustrating, as it redirects first from `changesets-latest` to a specific date and then to one of mirrors.
 
 ### Unpack
 
@@ -141,7 +141,7 @@ The file should be unarchived to allow processing, with something like `bzip2 -d
 
 `tail -n 2000000` may be used to extract just group of last changesets - in late 2021 it was about one week of activity.
 
-Note that it is safe as each change is in own line and this script parses input lane by lane and does not need a valid XML as an input.
+Note that it is safe as each change is in its own line and this script parses input line by line and does not need a valid XML as input.
 
 ## Running script
 
@@ -151,13 +151,13 @@ Note that as written it is merging data for StreetComplete and its fork Zażół
 
 ## Results
 
-It will write to `output.csv` file in format making further processing easy. It will also show in the stdout very basic statistics collected during run.
+It will write to file `output.csv` in CSV format making further processing easy. It will also show very basic statistics collected during execution on stdout.
 
 # changesets-latest file
 
 Data in the file looks like this
 
-```
+```xml
  <changeset id="71993917" created_at="2019-07-08T00:10:48Z" closed_at="2019-07-08T00:32:20Z" open="false" user="Jofe Graham-Jenkins" uid="9581609" min_lat="-21.0791870" min_lon="149.2141598" max_lat="-21.0791870" max_lon="149.2141598" num_changes="1" comments_count="0">
   <tag k="source" v="survey"/>
   <tag k="comment" v="Add opening hours"/>
@@ -168,7 +168,7 @@ Data in the file looks like this
 
 or
 
-```
+```xml
 <changeset id="35" created_at="2005-05-24T16:49:34Z" closed_at="2005-05-24T19:28:22Z" open="false" user="Magne" uid="204" min_lat="62.6301994" min_lon="6.1912751" max_lat="63.4497032" max_lon="11.1394958" num_changes="303" comments_count="0"/>
 ```
 
@@ -180,6 +180,6 @@ for early changesets without tags.
 
 # Disclaimer
 
-This script is published as-is. It was used solely by author as far as author knows (PR removing that disclaimer is welcome if you used it succesfully).
+This script is published as-is. It was used solely by the author as far as the author knows (PR removing that disclaimer is welcome if you used it succesfully).
 
 Feel free to open PRs or create issues if something may be improved to make it more useful for you.
