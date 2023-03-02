@@ -10,7 +10,7 @@ Explanation and variants in sections below.
 
 ```sh
 # go to the location where data should be processed (replace path as needed)
-cd /media/mateusz/OSM_cache
+cd /media/mateusz/OSM_cache/changesets
 
 # get data and start seeding
 aria2c https://planet.osm.org/planet/changesets-latest.osm.bz2.torrent
@@ -24,10 +24,10 @@ tail -n 2000000 changesets-*.osm > just_latest_changesets.osm
 # TODO: maybe skip such entries and log that?
 
 # actually run script, from where script is (modify path as needed)
-php streetcomplete_edits_generate_csv_and_make_quest_summary.php "/media/mateusz/OSM_cache/just_latest_changesets.osm"
+php streetcomplete_edits_generate_csv_and_make_quest_summary.php "/media/mateusz/OSM_cache/changesets/just_latest_changesets.osm"
 
 # transform all edits ever made into a csv file
-php all_edits_to_csv_file.php "/media/mateusz/OSM_cache/changesets-*.osm"
+php all_edits_to_csv_file.php "/media/mateusz/OSM_cache/changesets/changesets-*.osm"
 ```
 
 # Output
