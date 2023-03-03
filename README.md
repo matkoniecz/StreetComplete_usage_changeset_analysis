@@ -115,6 +115,8 @@ Unlike importing full planet, processing this file has minimal hardware requirem
 
 Some free space will be required. But just 60 GB should be enough - as of 2021.
 
+As of 2023 - compressed file is 5.5 GB.
+
 Usage of RAM and CPU is minimal as file is processed line by line and contains only metadata of changesets. Requirements here are lower than using a web browser for browsing a typical bloated web site.
 
 # Usage
