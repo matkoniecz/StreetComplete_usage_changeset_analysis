@@ -23,6 +23,8 @@ def main():
             days = int(row[2])
             main_tag = row[3]
             link = row[4]
+            if outcome == '????TODO':
+                continue
             if main_tag not in sorted_by_main_tag:
                 sorted_by_main_tag[main_tag] = []
             sorted_by_main_tag[main_tag].append({'outcome': outcome, 'days': days, 'main_tag': main_tag, 'link': link})
@@ -42,6 +44,9 @@ def main():
             for _ in range(bin_count):
                 bins.append({'deleted': 0, 'marked_as_surveyed': 0, 'ratio': np.nan})
             for entry in sorted_by_main_tag[main_tag]:
+                if "node" not in entry["link"]:
+                    # https://www.openstreetmap.org/way/310581611/history
+                    continue
                 bin_index = entry['days'] // bin_size
                 if entry['outcome'] == 'marked_as_surveyed':
                     bins[bin_index]['marked_as_surveyed'] += 1

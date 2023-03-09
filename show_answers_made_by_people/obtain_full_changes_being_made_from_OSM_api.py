@@ -102,6 +102,12 @@ def selftest():
     node.to_dict()
     print(node)
 
+    # edit and undo split into separate edits
+    connection = sqlite3.connect(database_filepath())
+    cursor = connection.cursor()
+    analyse_history(cursor, api, '118933758', 'CheckExistence')
+    connection.close()
+
 
 def main():
     selftest()
@@ -123,7 +129,7 @@ def main():
             editor = row[1]
             quest_type = row[3]
             if quest_type == "CheckExistence":
-                stats = analyse_history(cursor, api, edit_id, stats, quest_type)
+                stats += analyse_history(cursor, api, edit_id, quest_type)
             if quest_type == "AddFireHydrantDiameter":
                 print(quest_type)
             connection.commit()
@@ -144,37 +150,64 @@ def get_main_key_from_tags(tags):
             return potential_main_key + " = " + tags[potential_main_key]
     raise Exception("main tag - failed to find for ", tags)
 
-def analyse_history(local_database_cursor, api, changeset_id, stats, quest_type):
+def analyse_history(local_database_cursor, api, changeset_id, quest_type):
+    new_stats = []
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
         link = "https://www.openstreetmap.org/" + type(element).__name__.lower() + "/" + str(element.id) + "/history"
         print(link)
-        edited_count = 0
         for index, entry in enumerate(history):
             if entry.changeset_id == changeset_id:
+                if new_stats != []:
+                    # multiple changes to a single object within a single changeset are possible
+                    # with an undo
+                    # in such case what should be done?
+                    # register undone as undone?
+                    # register reverts as reverts?
+                    # register last one as applying if it is not just revert to the initial state?
+                    #
+                    # note that nodes can be also moved! Maybe even multiple times.
+                    # so not only reverts
+                    #
+                    # and it is possible to combine them...
+                    # moving node may mean that it is revert of node move
+                    #
+                    # ideally history would be better supported here...
+                    # TODO - support this!
+
+                    # it gets worse! splits across multiple changesets are possible with delayed undos!
+                    # TODO - support this!
+                    for entry in history:
+                        if entry.changeset_id == changeset_id:
+                            new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
+                    return new_stats
                 if index == 0:
-                    print("StreetComplete created an object")
+                    new_stats.append({"quest_type": quest_type, "action": 'created', 'main_tag': get_main_key_from_tags(entry.tags), 'link': link})
                 else:
                     previous_entry = history[index - 1]
-                    this_timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
-                    previous_timestamp = datetime.strptime(previous_entry.timestamp, utils.typical_osm_timestamp_format())
-                    days = (this_timestamp - previous_timestamp).days
-                    print(days, "days")
-                    print(previous_entry.tags)
-                    print(entry)
-                    main_tag = get_main_key_from_tags(previous_entry.tags)
-                    if entry.visible == False:
-                        stats.append({"quest_type": quest_type, "action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
-                        print("DELETED")
+                    if previous_entry.visible == False:
+                        print("StreetComplete is undoing deletion here, this was split into multiple edits. How to handle THAT? TODO")
+                        new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
                     else:
-                        print("MARKED AS STILL EXISTING")
-                        stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
-                    edited_count += 1
+                        this_timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
+                        previous_timestamp = datetime.strptime(previous_entry.timestamp, utils.typical_osm_timestamp_format())
+                        days = (this_timestamp - previous_timestamp).days
+                        print(days, "days")
+                        print(previous_entry.tags)
+                        #handle ways and relations
+                        #print(previous_entry.latitude)
+                        #print(previous_entry.longitude)
+                        print(link)
+                        main_tag = get_main_key_from_tags(previous_entry.tags)
+                        if entry.visible == False:
+                            new_stats.append({"quest_type": quest_type, "action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
+                            print("DELETED")
+                        else:
+                            print("MARKED AS STILL EXISTING")
+                            new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
                 print("==============")
                 print()
-        if edited_count > 1:
-            print("multiple edits - reverts?")
-    return stats
+    return new_stats
 
 def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
     local_database_cursor.execute("""
