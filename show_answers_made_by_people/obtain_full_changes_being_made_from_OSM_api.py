@@ -8,6 +8,7 @@ from osm_easy_api.diff import diff_parser
 from datetime import datetime
 from osm_bot_abstraction_layer import utils
 import time
+import osm_bot_abstraction_layer.tag_knowledge as tag_knowledge
 
 # https://github.com/docentYT/osm_easy_api
 """
@@ -144,8 +145,7 @@ def main():
     connection.close()
 
 def get_main_key_from_tags(tags):
-    for potential_main_key in ["amenity", "shop", "barrier", "leisure", "advertising", "emergency",
-    "tourism", "man_made", "traffic_calming"]: # TODO - synchronize it with that NSI parser, upwell into osm_bot_abstraction_layer
+    for potential_main_key in tag_knowledge.typical_main_keys():
         if potential_main_key in tags:
             return potential_main_key + " = " + tags[potential_main_key]
     raise Exception("main tag - failed to find for ", tags)
