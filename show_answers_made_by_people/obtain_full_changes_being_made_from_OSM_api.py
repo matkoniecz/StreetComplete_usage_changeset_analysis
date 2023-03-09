@@ -137,6 +137,13 @@ def main():
     tag_edit = 133266712
     connection.close()
 
+def get_main_key_from_tags(tags):
+    for potential_main_key in ["amenity", "shop", "barrier", "leisure", "advertising", "emergency",
+    "tourism", "man_made", "traffic_calming"]: # TODO - synchronize it with that NSI parser, upwell into osm_bot_abstraction_layer
+        if potential_main_key in tags:
+            return potential_main_key + " = " + tags[potential_main_key]
+    raise Exception("main tag - failed to find for ", tags)
+
 def analyse_history(local_database_cursor, api, changeset_id, stats, quest_type):
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
@@ -154,14 +161,8 @@ def analyse_history(local_database_cursor, api, changeset_id, stats, quest_type)
                     days = (this_timestamp - previous_timestamp).days
                     print(days, "days")
                     print(previous_entry.tags)
-                    main_tag = None
-                    for potential_main_key in ["amenity", "barrier", "leisure", "advertising", "emergency",
-                    "tourism", "man_made", "traffic_calming"]: # TODO - synchronize it with that NSI parser, upwell into osm_bot_abstraction_layer
-                        if potential_main_key in previous_entry.tags:
-                            main_tag = potential_main_key + " = " + previous_entry.tags[potential_main_key]
-                            print("MAIN", main_tag)
-                            break
                     print(entry)
+                    main_tag = get_main_key_from_tags(previous_entry.tags)
                     if entry.visible == False:
                         stats.append({"quest_type": quest_type, "action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
                         print("DELETED")
