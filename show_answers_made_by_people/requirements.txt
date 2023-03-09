@@ -1,0 +1,4 @@
+osm_easy_api
+osm_bot_abstraction_layer
+matplotlib>=3.5.2
+numpy>=1.22.3

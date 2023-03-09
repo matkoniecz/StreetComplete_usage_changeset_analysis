@@ -5,6 +5,7 @@
 # output
 *.csv
 *.xml
+*.png
 
-# processed output
+# likely temporary files created within repo
 *.ods
