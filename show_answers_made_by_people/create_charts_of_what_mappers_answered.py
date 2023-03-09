@@ -19,10 +19,10 @@ def main():
         sorted_by_main_tag = {}
         for row in reader:
             print(row)
-            outcome = row[0]
-            days = int(row[1])
-            main_tag = row[2]
-            link = row[3]
+            outcome = row[1]
+            days = int(row[2])
+            main_tag = row[3]
+            link = row[4]
             if main_tag not in sorted_by_main_tag:
                 sorted_by_main_tag[main_tag] = []
             sorted_by_main_tag[main_tag].append({'outcome': outcome, 'days': days, 'main_tag': main_tag, 'link': link})

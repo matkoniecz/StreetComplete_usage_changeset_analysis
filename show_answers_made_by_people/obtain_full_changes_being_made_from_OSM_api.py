@@ -123,19 +123,21 @@ def main():
             editor = row[1]
             quest_type = row[3]
             if quest_type == "CheckExistence":
-                stats = analyse_history(cursor, api, edit_id, stats)
+                stats = analyse_history(cursor, api, edit_id, stats, quest_type)
+            if quest_type == "AddFireHydrantDiameter":
+                print(quest_type)
             connection.commit()
     print(json.dumps(stats, default=str, indent=3))
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         for entry in stats:
-            writer.writerow([entry["action"], entry["days"], entry["main_tag"], entry["link"]])
+            writer.writerow([entry["quest_type"], entry["action"], entry["days"], entry["main_tag"], entry["link"]])
     deleting_points = 133235020
     deleting_areas = 133234704
     tag_edit = 133266712
     connection.close()
 
-def analyse_history(local_database_cursor, api, changeset_id, stats):
+def analyse_history(local_database_cursor, api, changeset_id, stats, quest_type):
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
         link = "https://www.openstreetmap.org/" + type(element).__name__.lower() + "/" + str(element.id) + "/history"
@@ -161,11 +163,11 @@ def analyse_history(local_database_cursor, api, changeset_id, stats):
                             break
                     print(entry)
                     if entry.visible == False:
-                        stats.append({"action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
+                        stats.append({"quest_type": quest_type, "action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
                         print("DELETED")
                     else:
                         print("MARKED AS STILL EXISTING")
-                        stats.append({"action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
+                        stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
                     edited_count += 1
                 print("==============")
                 print()
