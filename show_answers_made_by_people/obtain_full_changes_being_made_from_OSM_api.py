@@ -109,9 +109,25 @@ def selftest():
     analyse_history(cursor, api, '118933758', 'CheckExistence')
     connection.close()
 
+def specific_test_cases():
+    deleting_points = 133235020
+    deleting_areas = 133234704
+    tag_edit = 133266712
+    # https://www.openstreetmap.org/changeset/133522260
+    splitting_ways_and_adding_tags = 133522260
+    deletion_undone_in_the_separate_changeset = 126057446
+
+    connection = sqlite3.connect(database_filepath())
+    cursor = connection.cursor()
+    api = Api(url='https://openstreetmap.org')
+
+    analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence')
+
+    connection.close()
 
 def main():
     selftest()
+    specific_test_cases()
     connection = sqlite3.connect(database_filepath())
     cursor = connection.cursor()
     create_table_if_needed(cursor)
@@ -139,12 +155,6 @@ def main():
         writer = csv.writer(f)
         for entry in stats:
             writer.writerow([entry["quest_type"], entry["action"], entry["days"], entry["main_tag"], entry["link"]])
-    deleting_points = 133235020
-    deleting_areas = 133234704
-    tag_edit = 133266712
-    # https://www.openstreetmap.org/changeset/133522260
-    splitting_ways_and_adding_tags = 133522260
-    deletion_undone_in_the_separate_changeset = 126057446
     connection.close()
 
 def get_main_key_from_tags(tags):
