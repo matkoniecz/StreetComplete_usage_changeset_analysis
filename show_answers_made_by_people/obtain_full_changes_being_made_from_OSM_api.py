@@ -171,29 +171,34 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
         print(link)
         for index, entry in enumerate(history):
             if entry.changeset_id == changeset_id:
-                if new_stats != []:
-                    # multiple changes to a single object within a single changeset are possible
-                    # with an undo
-                    # in such case what should be done?
-                    # register undone as undone?
-                    # register reverts as reverts?
-                    # register last one as applying if it is not just revert to the initial state?
-                    #
-                    # note that nodes can be also moved! Maybe even multiple times.
-                    # so not only reverts
-                    #
-                    # and it is possible to combine them...
-                    # moving node may mean that it is revert of node move
-                    #
-                    # ideally history would be better supported here...
-                    # TODO - support this!
+                # multiple changes to a single object within a single changeset are possible
+                # with an undo
+                # in such case what should be done?
+                # register undone as undone?
+                # register reverts as reverts?
+                # register last one as applying if it is not just revert to the initial state?
+                #
+                # note that nodes can be also moved! Maybe even multiple times.
+                # so not only reverts
+                #
+                # and it is possible to combine them...
+                # moving node may mean that it is revert of node move
+                #
+                # ideally history would be better supported here...
+                # TODO - support this!
 
-                    # it gets worse! splits across multiple changesets are possible with delayed undos!
-                    # TODO - support this!
-                    for entry in history:
-                        if entry.changeset_id == changeset_id:
+                # it gets worse! splits across multiple changesets are possible with delayed undos!
+                # TODO - support this!
+                for index_of_potential_duplicate, potential_duplicate_entry in enumerate(history):
+                    if index != index_of_potential_duplicate:
+                        if entry.changeset_id == potential_duplicate_entry.changeset_id: # new_stats != []
                             new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
-                    return new_stats
+                            # TODO: handling do-revert-do_something_else (right now all three would be treated as reverts)
+                            return new_stats
+                        if entry.user_id == potential_duplicate_entry.user_id:
+                            # smarter checks: blocked by https://github.com/docentYT/osm_easy_api/issues/7 for now
+                            new_stats.append({"quest_type": quest_type, "action": '????TODO - the same user, assuming the same action', 'main_tag': None, 'link': link})
+                            return new_stats
                 if index == 0:
                     new_stats.append({"quest_type": quest_type, "action": 'created', 'main_tag': get_main_key_from_tags(entry.tags), 'link': link})
                 else:
@@ -243,6 +248,7 @@ def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
 
 
 def changeset_data(local_database_cursor, api, changeset_id):
+    # caching would be nice but is blocked by https://github.com/docentYT/osm_easy_api/issues/7
     print("MAKING A CALL TO OSM API - api.changeset.download(", changeset_id, ")")
     downloaded = api.changeset.download(changeset_id)
     for action in downloaded:
