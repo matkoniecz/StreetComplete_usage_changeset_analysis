@@ -144,6 +144,7 @@ def main():
     tag_edit = 133266712
     # https://www.openstreetmap.org/changeset/133522260
     splitting_ways_and_adding_tags = 133522260
+    deletion_undone_in_the_separate_changeset = 126057446
     connection.close()
 
 def get_main_key_from_tags(tags):
