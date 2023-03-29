@@ -39,7 +39,7 @@ def main():
         labels = [str(i) + " - " + str(i + 1) for i in range(bin_count)]
         print(labels)
 
-        for tag in sorted_by_main_tag.keys():
+        for main_tag in sorted_by_main_tag.keys():
             bins = []
             for _ in range(bin_count):
                 bins.append({'deleted': 0, 'marked_as_surveyed': 0, 'ratio': np.nan})
@@ -53,21 +53,41 @@ def main():
                 if entry['outcome'] == 'deleted':
                     bins[bin_index]['deleted'] += 1
                 bins[bin_index]['ratio'] = bins[bin_index]['marked_as_surveyed'] / (bins[bin_index]['marked_as_surveyed'] + bins[bin_index]['deleted'])
-            print(bins)
+            #print(bins)
             data = []
-            for i in range(bin_count):
-                data.append(bins[i]['ratio'])
-            
-            objects = labels
-            y_pos = np.arange(len(objects))
-            performance = [6, 4, 2, np.nan, 1]
-            plt.clf()
-            plt.bar(y_pos, data, align='center', alpha=0.5)
-            plt.xticks(y_pos, objects)
-            plt.ylabel('Value')
-            plt.title(tag)
-            plt.savefig('bargraph.png')
-            plt.show()
+            has_real_data = False
+            total_marked_as_surveyed = 0
+            total_deleted = 0
+            for bin_index in range(bin_count):
+                marked_as_surveyed = bins[bin_index]['marked_as_surveyed']
+                total_marked_as_surveyed += marked_as_surveyed
+                deleted = bins[bin_index]['deleted']
+                total_deleted += deleted
+                #print()
+                #print(marked_as_surveyed)
+                #print(deleted)
+                #print(bins[bin_index]['ratio'])
+                ratio = bins[bin_index]['ratio']
+                if (marked_as_surveyed + deleted) < 100:
+                    ratio = np.nan
+                else:
+                    has_real_data = True
+                data.append(ratio)
+
+            sample = total_marked_as_surveyed + total_deleted
+            ratio = total_marked_as_surveyed / sample
+            if has_real_data or (ratio > 0.99 and total_marked_as_surveyed > 100):
+                objects = labels
+                y_pos = np.arange(len(objects))
+                plt.clf()
+                plt.bar(y_pos, data, align='center', alpha=0.5)
+                plt.xticks(y_pos, objects)
+                plt.ylabel('Value')
+                title = main_tag + " " + str(int(ratio*100)) + "." + str(int(ratio*1000)%10) + "% existed, sample " + str(sample)
+                print(title)
+                plt.title(title)
+                plt.savefig(main_tag + '.png')
+                #plt.show()
 
 
 main()
