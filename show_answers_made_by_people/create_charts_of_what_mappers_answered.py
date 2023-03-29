@@ -6,7 +6,7 @@ import functools
 import csv
 
 def main():
-    plt.rcParams["figure.figsize"] = [10, 10]
+    plt.rcParams["figure.figsize"] = [20, 10]
     # see https://github.com/matkoniecz/quick-beautiful/tree/master/10-nice-graphs for my research on styling
     plt.style.use('fivethirtyeight')
     plt.grid(True)
