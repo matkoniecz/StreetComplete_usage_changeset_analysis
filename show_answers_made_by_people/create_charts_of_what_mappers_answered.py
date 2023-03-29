@@ -6,6 +6,11 @@ import functools
 import csv
 
 def main():
+    show_data_for_quest("CheckExistence")
+    show_data_for_quest("AddOpeningHours")
+    show_data_for_quest("AddFireHydrantDiameter")
+
+def show_data_for_quest(quest):
     plt.rcParams["figure.figsize"] = [20, 10]
     # see https://github.com/matkoniecz/quick-beautiful/tree/master/10-nice-graphs for my research on styling
     plt.style.use('fivethirtyeight')
@@ -19,11 +24,15 @@ def main():
         sorted_by_main_tag = {}
         for row in reader:
             print(row)
+            quest_type = row[0]
             outcome = row[1]
             days = int(row[2])
             main_tag = row[3]
             link = row[4]
+            if quest_type != quest:
+                continue
             if outcome == '????TODO':
+                print("unhandled", row)
                 continue
             if main_tag not in sorted_by_main_tag:
                 sorted_by_main_tag[main_tag] = []
@@ -42,7 +51,7 @@ def main():
         for main_tag in sorted_by_main_tag.keys():
             bins = []
             for _ in range(bin_count):
-                bins.append({'deleted': 0, 'marked_as_surveyed': 0, 'ratio': np.nan})
+                bins.append({'acted': 0, 'marked_as_surveyed': 0, 'ratio': np.nan})
             for entry in sorted_by_main_tag[main_tag]:
                 if "node" not in entry["link"]:
                     # https://www.openstreetmap.org/way/310581611/history
@@ -50,31 +59,31 @@ def main():
                 bin_index = entry['days'] // bin_size
                 if entry['outcome'] == 'marked_as_surveyed':
                     bins[bin_index]['marked_as_surveyed'] += 1
-                if entry['outcome'] == 'deleted':
-                    bins[bin_index]['deleted'] += 1
-                bins[bin_index]['ratio'] = bins[bin_index]['marked_as_surveyed'] / (bins[bin_index]['marked_as_surveyed'] + bins[bin_index]['deleted'])
+                if entry['outcome'] == 'deleted' or entry['outcome'] == 'changed_data_tags':
+                    bins[bin_index]['acted'] += 1
+                bins[bin_index]['ratio'] = bins[bin_index]['marked_as_surveyed'] / (bins[bin_index]['marked_as_surveyed'] + bins[bin_index]['acted'])
             #print(bins)
             data = []
             has_real_data = False
             total_marked_as_surveyed = 0
-            total_deleted = 0
+            total_acted = 0
             for bin_index in range(bin_count):
                 marked_as_surveyed = bins[bin_index]['marked_as_surveyed']
                 total_marked_as_surveyed += marked_as_surveyed
-                deleted = bins[bin_index]['deleted']
-                total_deleted += deleted
+                acted = bins[bin_index]['acted']
+                total_acted += acted
                 #print()
                 #print(marked_as_surveyed)
-                #print(deleted)
+                #print(acted)
                 #print(bins[bin_index]['ratio'])
                 ratio = bins[bin_index]['ratio']
-                if (marked_as_surveyed + deleted) < 100:
+                if (marked_as_surveyed + acted) < 100:
                     ratio = np.nan
                 else:
                     has_real_data = True
                 data.append(ratio)
 
-            sample = total_marked_as_surveyed + total_deleted
+            sample = total_marked_as_surveyed + total_acted
             ratio = total_marked_as_surveyed / sample
             if has_real_data or (ratio > 0.99 and total_marked_as_surveyed > 100):
                 objects = labels
@@ -83,7 +92,7 @@ def main():
                 plt.bar(y_pos, data, align='center', alpha=0.5)
                 plt.xticks(y_pos, objects)
                 plt.ylabel('Value')
-                title = main_tag + " " + str(int(ratio*100)) + "." + str(int(ratio*1000)%10) + "% existed, sample " + str(sample)
+                title = main_tag + " " + str(int(ratio*100)) + "." + str(int(ratio*1000)%10) + "% got only check data changed, sample " + str(sample)
                 print(title)
                 plt.title(title)
                 plt.savefig(main_tag + '.png')

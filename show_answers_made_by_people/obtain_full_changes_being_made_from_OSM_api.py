@@ -2,7 +2,7 @@ from osm_easy_api import Api
 import csv
 import sqlite3
 import json
-from osm_easy_api.data_classes import Node, Way, Relation, OsmChange, Action, Tags
+from osm_easy_api.data_classes import Node, Way, Relation, Changeset, OsmChange, Action, Tags
 
 from osm_easy_api.diff import diff_parser
 from datetime import datetime
@@ -81,12 +81,11 @@ def deserialize_element_list(serialized):
             raise Exception("unexpected type " + entry['type'])
     return returned
 
-def selftest():
+def selftest(cursor):
     api = Api(url='https://openstreetmap.org')
     node = api.elements.get(Node, 25733488)
     dict = node.to_dict()
     node_from_dict = Node.from_dict(dict)
-    print(dict)
 
     node = Node.from_dict({
             'type': "Node",
@@ -101,15 +100,11 @@ def selftest():
             'longitude': 9.2906897,
         })
     node.to_dict()
-    print(node)
 
     # edit and undo split into separate edits
-    connection = sqlite3.connect(database_filepath())
-    cursor = connection.cursor()
     analyse_history(cursor, api, '118933758', 'CheckExistence')
-    connection.close()
 
-def specific_test_cases():
+def specific_test_cases(cursor):
     deleting_points = 133235020
     deleting_areas = 133234704
     tag_edit = 133266712
@@ -117,25 +112,22 @@ def specific_test_cases():
     splitting_ways_and_adding_tags = 133522260
     deletion_undone_in_the_separate_changeset = 126057446
 
-    connection = sqlite3.connect(database_filepath())
-    cursor = connection.cursor()
     api = Api(url='https://openstreetmap.org')
 
     analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence')
 
-    connection.close()
-
 def main():
-    selftest()
-    specific_test_cases()
     connection = sqlite3.connect(database_filepath())
     cursor = connection.cursor()
     create_table_if_needed(cursor)
     check_database_integrity(cursor)
+    selftest(cursor)
+    specific_test_cases(cursor)
 
     api = Api(url='https://openstreetmap.org')
 
     stats = []
+    todocount = 0
     with open('/media/mateusz/OSM_cache/changesets/sc_edits_list_from_2021-05-20_to_2023-02-20.csv') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader, None)
@@ -147,28 +139,39 @@ def main():
             quest_type = row[3]
             if quest_type == "CheckExistence":
                 stats += analyse_history(cursor, api, edit_id, quest_type)
+            if quest_type == "AddOpeningHours":
+                stats += analyse_history(cursor, api, edit_id, quest_type)
             if quest_type == "AddFireHydrantDiameter":
-                print(quest_type)
+                stats += analyse_history(cursor, api, edit_id, quest_type)
             connection.commit()
-    print(json.dumps(stats, default=str, indent=3))
+    #print(json.dumps(stats, default=str, indent=3))
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         for entry in stats:
-            writer.writerow([entry["quest_type"], entry["action"], entry["days"], entry["main_tag"], entry["link"]])
+            if entry['action'] == '????TODO':
+                todocount += 1
+            else:
+                if 'days' in entry:
+                    writer.writerow([entry["quest_type"], entry["action"], entry["days"], entry["main_tag"], entry["link"]])
+                else:
+                    print(entry)
     connection.close()
+    print(todocount, 'unhandled entries')
 
 def get_main_key_from_tags(tags):
     for potential_main_key in tag_knowledge.typical_main_keys():
         if potential_main_key in tags:
             return potential_main_key + " = " + tags[potential_main_key]
-    raise Exception("main tag - failed to find for ", tags)
+    #return "wat=wat" # TODO investigate
+    # {'addr:city': 'Siegen', 'addr:country': 'DE', 'addr:housenumber': '16', 'addr:postcode': '57076', 'addr:street': 'Wilhelm-von-Humboldt-Platz', 'email': 'info@service-transport.de', 'mobile': '+49 152 51427455', 'name': 'S-Transport Haushaltsauflösungen & Entrümpelungen in Siegen', 'opening_hours': 'Mo-Fr 08:00-20:00, Sa 08:00-18:00', 'phone': '+49 271 23571842', 'website': 'https://www.service-transport.de'}
+    print("main tag - failed to find for ", tags)
+    return None
 
 def analyse_history(local_database_cursor, api, changeset_id, quest_type):
     new_stats = []
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
         link = "https://www.openstreetmap.org/" + type(element).__name__.lower() + "/" + str(element.id) + "/history"
-        print(link)
         for index, entry in enumerate(history):
             if entry.changeset_id == changeset_id:
                 # multiple changes to a single object within a single changeset are possible
@@ -196,6 +199,8 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                             # TODO: handling do-revert-do_something_else (right now all three would be treated as reverts)
                             return new_stats
                         if entry.user_id == potential_duplicate_entry.user_id:
+                            print(changeset_metadata(local_database_cursor, api, entry.changeset_id))
+                            print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id))
                             # smarter checks: blocked by https://github.com/docentYT/osm_easy_api/issues/7 for now
                             new_stats.append({"quest_type": quest_type, "action": '????TODO - the same user, assuming the same action', 'main_tag': None, 'link': link})
                             return new_stats
@@ -210,22 +215,84 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                         this_timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
                         previous_timestamp = datetime.strptime(previous_entry.timestamp, utils.typical_osm_timestamp_format())
                         days = (this_timestamp - previous_timestamp).days
-                        print(days, "days")
-                        print(previous_entry.tags)
-                        #handle ways and relations
-                        #print(previous_entry.latitude)
-                        #print(previous_entry.longitude)
-                        print(link)
+                        #print(days, "days")
+                        #print(previous_entry.tags)
+                        #print(link)
                         main_tag = get_main_key_from_tags(previous_entry.tags)
                         if entry.visible == False:
+                            latitude = None
+                            longitude = None
+                            if type(element).__name__.lower() == "node":
+                                latitude = previous_entry.latitude
+                                longitude = previous_entry.longitude
                             new_stats.append({"quest_type": quest_type, "action": 'deleted', 'days': days, 'main_tag': main_tag, 'link': link})
-                            print("DELETED")
+                            #print("DELETED")
                         else:
-                            print("MARKED AS STILL EXISTING")
-                            new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
-                print("==============")
-                print()
+                            #handle ways and relations
+                            latitude = None
+                            longitude = None
+                            if type(element).__name__.lower() == "node":
+                                latitude = entry.latitude
+                                longitude = entry.longitude
+                            affected = affected_tags(entry, previous_entry)
+                            
+                            tags_that_could_be_just_removed_in_addition = [
+                                # LAST_CHECK_DATE_KEYS
+                                #"check_date", - used by SC
+                                "lastcheck",
+                                "last_checked",
+                                "survey:date",
+                                "survey_date",
+                            ]
+                            for tag in tags_that_could_be_just_removed_in_addition:
+                                if tag in affected:
+                                    affected.remove(tag)
+                            if affected == ["check_date:opening_hours"] or affected == ["check_date"] or affected == ["opening_hours:signed"] or affected == ['fire_hydrant:diameter:signed']:
+                                #print("MARKED AS STILL EXISTING")
+                                new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif affected == ['traffic_calming']:
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif affected == ['fire_hydrant:diameter']:
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif affected == ["opening_hours"] or affected == ['check_date:opening_hours', 'opening_hours'] or affected == ['check_date:opening_hours', 'opening_hours', 'opening_hours:signed']:
+                                #print("COLLECTED NEW DATA")
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif affected == ['disused:shop', 'name', 'shop']:
+                                # shop is gone
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif "disused:shop" in affected:
+                                # flipped shop type, probably
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            else:
+                                print(link)
+                                print("NOT HANDLED")
+                                print(affected)
+                                print()
+                #print("==============")
+                #print()
     return new_stats
+
+def affected_tags(entry, previous_entry):
+    #print(previous_entry.tags)
+    #print(entry.tags)
+    affected = []
+    for key in entry.tags.keys():
+        if key in previous_entry.tags.keys():
+            if entry.tags[key] == previous_entry.tags[key]:
+                pass
+            else:
+                #print("MODIFIED", key, "=", entry.tags[key], "to", key, "=", previous_entry.tags[key])
+                affected.append(key)
+        else:
+            #print("ADDED", key, "=", entry.tags[key])
+            affected.append(key)
+    for key in previous_entry.tags.keys():
+        if key in entry.tags:
+            pass
+        else:
+            #print("REMOVED", key, "=", previous_entry.tags[key])
+            affected.append(key)
+    return affected
 
 def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
     local_database_cursor.execute("""
@@ -238,7 +305,10 @@ def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         return deserialize_element_list(json.loads(entries[0][0]))
 
     element_list = []
-    for action in changeset_data(local_database_cursor, api, changeset_id):
+    for action in api.changeset.download(changeset_id):
+        if action[0] != Action.MODIFY and action[0] != Action.DELETE and action[0] != Action.CREATE:
+            print(action)
+            raise
         element = action[1]
         element_list.append(element)
     saved_as_json = serialize_element_list(element_list)
@@ -247,22 +317,26 @@ def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
     return element_list
 
 
-def changeset_data(local_database_cursor, api, changeset_id):
-    # caching would be nice but is blocked by https://github.com/docentYT/osm_easy_api/issues/7
+def changeset_metadata(local_database_cursor, api, changeset_id):
+    local_database_cursor.execute("""
+    SELECT serialized
+    FROM changeset_metadata_api_cache
+    WHERE changeset_id = :changeset_id
+    """, {"changeset_id": changeset_id})
+    entries = local_database_cursor.fetchall()
+    if len(entries) == 1:
+        return Changeset.from_dict(json.loads(entries[0][0]))
+
     print("MAKING A CALL TO OSM API - api.changeset.download(", changeset_id, ")")
-    downloaded = api.changeset.download(changeset_id)
-    for action in downloaded:
-        if action[0] != Action.MODIFY and action[0] != Action.DELETE and action[0] != Action.CREATE:
-            print(action)
-            raise
-        print(action)
-        yield action
-    # multiple entries
-    # changeset_id, action, object_type
+    downloaded = api.changeset.get(changeset_id)
+
+    serialized = json.dumps(downloaded.to_dict(), default=str, indent=3)
+    local_database_cursor.execute("INSERT INTO changeset_metadata_api_cache VALUES (:changeset_id, :serialized)", {"changeset_id": changeset_id, 'serialized': serialized})
+    return serialized
 
 def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_easy_api_object):
     element_type_label = type(element_as_osm_easy_api_object).__name__.lower()
-    print(element_type_label)
+    #print(element_type_label)
     local_database_cursor.execute("""
     SELECT serialized_history
     FROM history_api_cache
@@ -335,6 +409,12 @@ def create_table_if_needed(cursor):
     else:
         cursor.execute('''CREATE TABLE changeset_object_api_cache
                     (changeset_id integer, element_list text)''')
+
+    if "changeset_metadata_api_cache" in existing_tables(cursor):
+        print("changeset_metadata_api_cache table exists already, delete file with database to recreate")
+    else:
+        cursor.execute('''CREATE TABLE changeset_metadata_api_cache
+                    (changeset_id integer, serialized text)''')
 
 def existing_tables(cursor):
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
