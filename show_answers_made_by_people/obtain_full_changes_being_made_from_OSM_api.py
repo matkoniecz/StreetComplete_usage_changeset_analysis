@@ -173,6 +173,7 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
         link = "https://www.openstreetmap.org/" + type(element).__name__.lower() + "/" + str(element.id) + "/history"
+        changeset_link = "https://www.openstreetmap.org/changeset/" + str(changeset_id)
         for index, entry in enumerate(history):
             if entry.changeset_id == changeset_id:
                 # multiple changes to a single object within a single changeset are possible
@@ -196,15 +197,35 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                 for index_of_potential_duplicate, potential_duplicate_entry in enumerate(history):
                     if index != index_of_potential_duplicate:
                         if entry.changeset_id == potential_duplicate_entry.changeset_id: # new_stats != []
+                            print()
+                            print(link)
+                            print(changeset_link)
+                            print("handle revert within single edit (just take latest action)")
                             new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
                             # TODO: handling do-revert-do_something_else (right now all three would be treated as reverts)
                             return new_stats
                         if entry.user_id == potential_duplicate_entry.user_id:
-                            print(changeset_metadata(local_database_cursor, api, entry.changeset_id))
-                            print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id))
-                            # smarter checks: blocked by https://github.com/docentYT/osm_easy_api/issues/7 for now
-                            new_stats.append({"quest_type": quest_type, "action": '????TODO - the same user, assuming the same action', 'main_tag': None, 'link': link})
-                            return new_stats
+                            changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id).tags
+                            potential_duplicate_changeset_tags = changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id).tags
+                            if 'comment' in potential_duplicate_changeset_tags:
+                                if changeset_tags['comment'] == potential_duplicate_changeset_tags['comment']:
+                                    timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
+                                    other_timestamp = datetime.strptime(potential_duplicate_entry.timestamp, utils.typical_osm_timestamp_format())
+                                    if abs((timestamp - other_timestamp).days) < 2: # TODO check real data!
+                                        print()
+                                        print(link)
+                                        print(changeset_link)
+                                        print("Requires smarter check, possible revert")
+                                        print("Is position the same?")
+                                        print("Are tags the same?")
+                                        print("If the same then it may be edit-revert-the same edit!")
+                                        print(timestamp)
+                                        print(other_timestamp)
+                                        print(changeset_metadata(local_database_cursor, api, entry.changeset_id))
+                                        print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id))
+                                        # smarter checks: blocked by https://github.com/docentYT/osm_easy_api/issues/7 for now
+                                        new_stats.append({"quest_type": quest_type, "action": '????TODO - the same user, assuming the same action', 'main_tag': None, 'link': link})
+                                        return new_stats
                 if index == 0:
                     new_stats.append({"quest_type": quest_type, "action": 'created', 'main_tag': get_main_key_from_tags(entry.tags), 'link': link})
                 else:
