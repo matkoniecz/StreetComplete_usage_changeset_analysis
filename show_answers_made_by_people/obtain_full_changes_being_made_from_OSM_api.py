@@ -112,6 +112,17 @@ def selftest(cursor):
     assert(is_one_of_shop_associated_keyes_removed_on_replacement('gibberish') == False)
     assert(is_shop_retagging(['amenity'], ['cuisine']) == True)
 
+    for quest in expected_tag_groups().keys():
+        if "cuisine" in expected_tag_groups()[quest]:
+            raise Exception("not expected")
+
+    for quest in expected_tag_groups().keys():
+       for key in expected_tag_groups()[quest]:
+        if "signed" in key:
+            #  or "check_date" in key
+            # is not valid, see opening hours: if check date is there, then it will be updated
+            raise Exception("not expected")
+
 
 def specific_test_cases(cursor):
     deleting_points = 133235020
@@ -310,12 +321,12 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                                 longitude = entry.longitude
                             change_summary = affected_tags(entry, previous_entry)
                             streetcomplete_tagged = change_summary['added'] + change_summary['modified']
-                            if only_check_dates_here(streetcomplete_tagged) or only_sign_presence_here(streetcomplete_tagged) or quest_type == "CheckExistence":
+                            if is_shop_retagging(streetcomplete_tagged, change_summary['removed']):
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            elif only_check_dates_or_sign_presence_here(streetcomplete_tagged):
                                 #print("MARKED AS STILL EXISTING")
                                 # includes say fire_hydrant:diameter:signed
                                 new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif is_shop_retagging(streetcomplete_tagged, change_summary['removed']):
-                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
                             elif "disused:shop" in streetcomplete_tagged:
                                 # flipped shop type, probably
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
@@ -360,7 +371,7 @@ def is_any_of_expected_quests(affected_keys):
 def expected_tag_groups():
     return {
         "AddHousenumber": ["nohousenumber", "addr:housename", "addr:housenumber"],
-        "AddOpeningHours": ["opening_hours", "cuisine", "opening_hours:signed", "check_date:opening_hours"],
+        "AddOpeningHours": ["opening_hours", "check_date:opening_hours"], # check_date:opening_hours may be updated if present
         "AddBenchStatusOnBusStop": ["bench"],
         "AddRoadWidth": ["width", "source:width"],
         "AddTracktype": ["tracktype"],
@@ -368,7 +379,7 @@ def expected_tag_groups():
         "AddRoadSurface": ["surface"],
         "AddBuildingType": ["building"],
         "AddRoadSmoothness": ["smoothness"],
-        "AddCycleway": ["cycleway:both"],
+        "AddCycleway": ["cycleway:both", "cycleway:right"],
         "AddParkingAccess": ["access"],
         "AddParkingFee": ["fee"],
         "AddPathSmoothness": ["smoothness"],
@@ -376,7 +387,7 @@ def expected_tag_groups():
         "AddBusStopShelter": ["shelter"],
         "AddStepsIncline": ["incline"],
         "AddCyclewayWidth": ["cycleway:width"],
-        "AddStepsRamp": ["ramp"],
+        "AddStepsRamp": ["ramp", "ramp:wheelchair"],
         "AddWheelchairAccessPublicTransport": ["wheelchair"],
         "AddCrossingType": ["crossing"],
         "AddWayLit": ["lit"],
@@ -384,19 +395,34 @@ def expected_tag_groups():
         "AddAddressStreet": ["addr:street"],
         "AddBicycleBarrierType": ["cycle_barrier"],
         "AddSeating": ["outdoor_seating", "indoor_seating"],
-        "AddLanes": ["lanes"],
+        "AddLanes": ["lane_markings", "lanes"],
+        "AddSidewalk": ["sidewalk"],
+        "AddCrossing": ["highway", "kerb"],
+        "AddTrafficSignalsButton": ["button_operated"],
+        "AddParkingType": ["parking"],
+        "AddPowerPolesMaterial": ["material"],
+        "SidewalkOverlay": ["sidewalk"],
+        "AddHandrail": ["handrail"],
+        "AddFireHydrantType": ["fire_hydrant:type"],
+        "AddWheelchairAccessToiletsPart": ["toilets:wheelchair"],
+        "AddBuildingLevels": ["building:levels"],
+        "AddTactilePavingCrosswalk": ["tactile_paving"],
+        "AddBikeParkingCover": ["covered"],
+        "AddTactilePavingBusStop": ["tactile_paving"],
+        "AddBinStatusOnBusStop": ["bin"],
+        "AddTactilePavingKerb": ["tactile_paving"],
+        "AddTrafficSignalsVibration": ["traffic_signals:vibration"],
+        "AddVegetarian": ["diet:vegetarian"],
+        "AddFireHydrantPosition": ["fire_hydrant:position"],
+        "AddForestLeafType": ["leaf_type"],
+
     }
 
-def only_check_dates_here(affected_keys):
+def only_check_dates_or_sign_presence_here(affected_keys):
     for key in affected_keys:
         if "check_date" not in key:
-            return False
-    return True
-
-def only_sign_presence_here(affected_keys):
-    for key in affected_keys:
-        if ":sign" not in key:
-            return False
+            if ":sign" not in key:
+                return False
     return True
 
 def is_edit_limited_to_this_keys(affected_keys, expected):
@@ -410,7 +436,9 @@ def is_edit_limited_to_this_keys(affected_keys, expected):
 def is_shop_retagging(affected_keys, deleted_keys):
     # note that shop=clothes name=Foobar -> shop=clothes also counts
     for key in affected_keys:
-        if key in ['shop', 'amenity', 'name']:
+        if key in ['shop', 'amenity', 'healthcare', 'name', 'brand', 'brand:wikidata', 'cuisine']:
+            # note https://www.openstreetmap.org/node/429346232/history
+            # SC is using NSI and NSI preset has some cases with say cuisine...
             continue
         return False
     for key in deleted_keys:

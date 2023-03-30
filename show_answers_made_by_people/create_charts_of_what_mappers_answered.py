@@ -57,6 +57,8 @@ def show_data_for_quest(quest):
                     # https://www.openstreetmap.org/way/310581611/history
                     continue
                 bin_index = entry['days'] // bin_size
+                if entry['outcome'] == 'changed_data_tags':
+                    bins[bin_index]['acted'] += 1
                 if entry['outcome'] == 'marked_as_surveyed':
                     bins[bin_index]['marked_as_surveyed'] += 1
                 if entry['outcome'] == 'deleted' or entry['outcome'] == 'changed_data_tags':
