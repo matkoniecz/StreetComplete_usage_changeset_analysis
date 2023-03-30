@@ -511,7 +511,14 @@ def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_
     returned = history_api_call(api, element_as_osm_easy_api_object)
     serialized = serialize_element_list(returned)
 
-    local_database_cursor.execute("INSERT INTO history_api_cache VALUES (:for_changeset_id, :object_type, :object_id, :serialized_history)", {"for_changeset_id": for_changeset_id, 'object_type': element_type_label, 'object_id': element_as_osm_easy_api_object.id, 'serialized_history': serialized})
+    known_changeset = 134282514 # we are fetching after this changeset was created and after all earlier changesets were closed
+    # so even if we fetch for earlier changeset, we can trust that data up to changeset  134282514 was fetched
+    # TODO fetch latest definitely closed changeset dynamically
+    # Why? So if we fetch object history for changeset 4000 at time when changeset 100_000_000 and all earlier are closed
+    # then we can use this data also when checking changeset 5000
+    if for_changeset_id > known_changeset:
+        raise Exception("Time passed, new larger changeset!")
+    local_database_cursor.execute("INSERT INTO history_api_cache VALUES (:for_changeset_id, :object_type, :object_id, :serialized_history)", {"for_changeset_id": known_changeset, 'object_type': element_type_label, 'object_id': element_as_osm_easy_api_object.id, 'serialized_history': serialized})
 
     return returned
 
