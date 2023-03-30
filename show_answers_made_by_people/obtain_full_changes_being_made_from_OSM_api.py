@@ -331,14 +331,26 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                             else:
                                 print()
                                 print("NOT HANDLED", quest_type)
+                                print(affected)
                                 print(link)
                                 print(changeset_link)
                                 if quest_type not in missing_tag_usage:
                                     missing_tag_usage[quest_type] = set()
+
                                 for key in affected:
-                                    missing_tag_usage[quest_type].add(key)
+                                    if key not in missing_tag_usage[quest_type]:
+                                        missing_tag_usage[quest_type].add(key)
+    
+
+                                known_affected = expected_tag_groups()
                                 for key in missing_tag_usage.keys():
-                                    print(str(list(missing_tag_usage[key])) + ", # " + key)
+                                    if key not in known_affected:
+                                        known_affected[key] = []
+                                    merged = list(set(list(known_affected[key] + list(missing_tag_usage[key])))) # TODO
+                                    known_affected[key] = merged
+
+                                for key in known_affected:
+                                    print('        "' + key + '": ' + str(known_affected[key]).replace("'", '"') + ",")
                                 print()
                                 print()
                 #print("==============")
@@ -346,58 +358,44 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
     return new_stats
 
 def is_any_of_expected_quests(affected_keys):
-    for group in expected_tag_groups():
-        if is_edit_limited_to_this_keys(affected_keys, group):
+    for quest in expected_tag_groups().keys():
+        if is_edit_limited_to_this_keys(affected_keys, expected_tag_groups()[quest]):
             return True
     return False
 
 
 def expected_tag_groups():
-    return [
-        ['highway', 'kerb'], # AddCrossing
-        ['shelter'], # AddBusStopShelter
-        ['lanes', 'lane_markings', 'lanes:forward', 'lanes:backward'], # AddLanes
-        ['crossing:barrier'], # AddRailwayCrossingBarrier
-        ['collection_times'], # AddPostboxCollectionTimes
-        ['segregated'], # AddCyclewaySegregation
-        ['step_count'], # AddStepCount
-        ['ramp:stroller', 'ramp'], # AddStepsRamp
-        ['traffic_signals:vibration'], # AddTrafficSignalsVibration
-        ['barrier', 'kerb'], # AddKerbHeight
-        ['button_operated'], # AddTrafficSignalsButton
-        ['handrail'], # AddHandrail
-        ['tracktype'], # AddTracktype
-        ['addr:street'], # AddAddressStreet
-        ['maxspeed', 'maxspeed:type'], # AddMaxSpeed
-        ['leaf_type'], # AddForestLeafType
-        ['bicycle_parking'], # AddBikeParkingType
-        ['traffic_signals:sound'], # AddTrafficSignalsSound
-        ["cycleway:right", "cycleway:left", "cycleway:both", 'cycleway:right:lane', 'cycleway:left:lane', 'cycleway:both:lane', 'cycleway:right:oneway', 'cycleway:left:oneway', 'cycleway:both:oneway', 'cycleway'], # AddCycleway
-        ["sidewalk"], # AddSidewalk
-        ["surface", 'surface:note', 'smoothness'], # AddPathSurface - but also path and pitch surfaces
-        ["addr:housenumber", 'nohousenumber'], # AddHousenumber
-        ["tactile_paving"],
-        ["building", "ruins"], # AddBuildingType
-        ["cycle_barrier"], # AddBicycleBarrierType
-        ["lit"],
-        ["sport"],
-        ["oneway"], # AddSuspectedOneway
-        ["bin"],
-        ['shoulder'], # AddShoulder
-        ['width', 'source:width'], # AddRoadWidth
-        ['backrest'], # AddBenchBackrest
-        ['access'], # AddParkingAccess
-        ['access'], # AddPlaygroundAccess
-        ['covered'], # AddPicnicTableCover
-        ['building:levels', 'roof:levels'], # AddBuildingLevels
-        ['incline'], # AddStepsIncline
-        ['crossing:island'], # AddCrossingIsland
-        ['crossing'], # AddCrossingType
-        ['roof:shape'], # AddRoofShape
-        ['parking'], # AddParkingType
-        ['bench'], # AddBenchStatusOnBusStop
-        ['fire_hydrant:position'], # AddFireHydrantPosition
-    ]
+    return {
+        "AddRoadSurface": ["surface"],
+        "AddCycleway": ["cycleway:left:lane", "cycleway:both:lane", "cycleway:left", "cycleway:both", "cycleway", "cycleway:right"],
+        "AddLanes": ["lane_markings"],
+        "AddBenchBackrest": ["backrest"],
+        "AddSuspectedOneway": ["oneway"],
+        "AddBinStatusOnBusStop": ["bin"],
+        "AddBusStopLit": ["lit"],
+        "AddHousenumber": ["nohousenumber", "addr:housename", "addr:housenumber"],
+        "AddWayLit": ["lit"],
+        "AddRailwayCrossingBarrier": ["crossing:barrier"],
+        "AddPathSurface": ["smoothness", "surface"],
+        "AddBuildingType": ["building"],
+        "AddPathSmoothness": ["smoothness"],
+        "AddCrossingType": ["crossing"],
+        "AddParkingType": ["parking"],
+        "AddFireHydrantType": ["fire_hydrant:type"],
+        "AddFireHydrantPosition": ["fire_hydrant:position"],
+        "AddRecyclingContainerMaterials": ["recycling:clothes", "recycling:glass"],
+        "AddBikeParkingCover": ["covered"],
+        "AddBikeParkingType": ["bicycle_parking"],
+        "AddCyclewaySegregation": ["segregated"],
+        "AddForestLeafType": ["leaf_type"],
+        "AddHandrail": ["handrail"],
+        "AddBusStopShelter": ["shelter"],
+        "AddBridgeStructure": ["bridge:structure"],
+        "AddTracktype": ["tracktype"],
+        "AddBenchStatusOnBusStop": ["bench"],
+        "AddCrossingIsland": ["crossing:island"],
+        "AddTactilePavingCrosswalk": ["tactile_paving"],
+    }
 
 def only_check_dates_here(affected_keys):
     for key in affected_keys:
