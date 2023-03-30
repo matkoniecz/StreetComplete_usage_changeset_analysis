@@ -14,7 +14,7 @@ import osm_bot_abstraction_layer.tag_knowledge as tag_knowledge
 # https://github.com/docentYT/osm_easy_api
 """
 
-python3.10 obtain_full_changes_being_made_from _OSM_api.py
+python3.10 obtain_full_changes_being_made_from_OSM_api.py
 
 """
 # ImportError: cannot import name 'html5lib' from 'pip._vendor' (/usr/lib/python3/dist-packages/pip/_vendor/__init__.py)
