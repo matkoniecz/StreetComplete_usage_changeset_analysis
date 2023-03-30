@@ -110,7 +110,7 @@ def selftest(cursor):
 
     assert(is_one_of_shop_associated_keyes_removed_on_replacement('cuisine') == True)
     assert(is_one_of_shop_associated_keyes_removed_on_replacement('gibberish') == False)
-    assert(is_shop_retagging(['amenity', 'cuisine']) == True)
+    assert(is_shop_retagging(['amenity'], ['cuisine']) == True)
 
 
 def specific_test_cases(cursor):
@@ -214,24 +214,30 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                             print(quest_type)
                             print(link)
                             print(changeset_link)
+                            print("entry.changeset_id == potential_duplicate_entry.changeset_id")
+                            print(entry.changeset_id, potential_duplicate_entry.changeset_id)
                             print("handle revert within single edit (just take latest action)")
                             new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
                             # TODO: handling do-revert-do_something_else (right now all three would be treated as reverts)
-                            print("our version:", index, "other version:", index_of_potential_duplicate)
+                            print("our index:", index, "other index:", index_of_potential_duplicate)
+                            print("our version:", index+1, "other version:", index_of_potential_duplicate+1)
                             print("But it can be also way splitting, or moving objects and then aswering question...")
                             if index < index_of_potential_duplicate:
                                 print("edit before final edit, lets skip it - but do not exit this function (or extract checking specific revision?)")
                             else:
                                 print("final edit, lets handle it - but has it made change compared to the initial state? Or just reverted and updated last edit time?")
+                            # interesting cases
+                            # https://www.openstreetmap.org/node/7188433530/history
+                            # https://www.openstreetmap.org/changeset/126653302 has r3 and r5 but not r4
                             return new_stats
                         if entry.user_id == potential_duplicate_entry.user_id:
-                            changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id).tags
-                            potential_duplicate_changeset_tags = changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id).tags
-                            if 'comment' in potential_duplicate_changeset_tags:
-                                if changeset_tags['comment'] == potential_duplicate_changeset_tags['comment']:
-                                    timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
-                                    other_timestamp = datetime.strptime(potential_duplicate_entry.timestamp, utils.typical_osm_timestamp_format())
-                                    if abs((timestamp - other_timestamp).days) < 2: # TODO check real data!
+                            timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
+                            other_timestamp = datetime.strptime(potential_duplicate_entry.timestamp, utils.typical_osm_timestamp_format())
+                            if abs((timestamp - other_timestamp).days) < 2: # TODO check real data!
+                                changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id).tags
+                                potential_duplicate_changeset_tags = changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id).tags
+                                if 'comment' in potential_duplicate_changeset_tags:
+                                    if changeset_tags['comment'] == potential_duplicate_changeset_tags['comment']:
                                         print()
                                         print("---------------------------------<")
                                         print(quest_type)
@@ -296,48 +302,29 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                             if type(element).__name__.lower() == "node":
                                 latitude = entry.latitude
                                 longitude = entry.longitude
-                            affected = affected_tags(entry, previous_entry)
-                            
-                            tags_that_could_be_just_removed_in_addition = [
-                                # LAST_CHECK_DATE_KEYS
-                                #"check_date", - used by SC
-                                "lastcheck",
-                                "last_checked",
-                                "survey:date",
-                                "survey_date",
-                            ]
-                            for tag in tags_that_could_be_just_removed_in_addition:
-                                if tag in affected:
-                                    affected.remove(tag)
-                            if only_check_dates_here(affected) or only_sign_presence_here(affected) or quest_type == "CheckExistence":
+                            change_summary = affected_tags(entry, previous_entry)
+                            streetcomplete_tagged = change_summary['added'] + change_summary['modified']
+                            if only_check_dates_here(streetcomplete_tagged) or only_sign_presence_here(streetcomplete_tagged) or quest_type == "CheckExistence":
                                 #print("MARKED AS STILL EXISTING")
                                 # includes say fire_hydrant:diameter:signed
                                 new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif affected == ['traffic_calming']:
+                            elif is_shop_retagging(streetcomplete_tagged, change_summary['removed']):
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif affected == ['fire_hydrant:diameter']:
-                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif affected == ["opening_hours"] or affected == ['check_date:opening_hours', 'opening_hours'] or affected == ['check_date:opening_hours', 'opening_hours', 'opening_hours:signed']:
-                                #print("COLLECTED NEW DATA")
-                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif is_shop_retagging(affected):
-                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
-                            elif "disused:shop" in affected:
+                            elif "disused:shop" in streetcomplete_tagged:
                                 # flipped shop type, probably
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
-                            # AddSurface
-                            elif is_any_of_expected_quests(affected):
+                            elif is_any_of_expected_quests(streetcomplete_tagged):
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})                            
                             else:
                                 print()
                                 print("NOT HANDLED", quest_type)
-                                print(affected)
+                                print(streetcomplete_tagged)
                                 print(link)
                                 print(changeset_link)
                                 if quest_type not in missing_tag_usage:
                                     missing_tag_usage[quest_type] = set()
 
-                                for key in affected:
+                                for key in streetcomplete_tagged:
                                     if key not in missing_tag_usage[quest_type]:
                                         missing_tag_usage[quest_type].add(key)
     
@@ -366,35 +353,32 @@ def is_any_of_expected_quests(affected_keys):
 
 def expected_tag_groups():
     return {
-        "AddRoadSurface": ["surface"],
-        "AddCycleway": ["cycleway:left:lane", "cycleway:both:lane", "cycleway:left", "cycleway:both", "cycleway", "cycleway:right"],
-        "AddLanes": ["lane_markings"],
-        "AddBenchBackrest": ["backrest"],
-        "AddSuspectedOneway": ["oneway"],
-        "AddBinStatusOnBusStop": ["bin"],
-        "AddBusStopLit": ["lit"],
         "AddHousenumber": ["nohousenumber", "addr:housename", "addr:housenumber"],
-        "AddWayLit": ["lit"],
-        "AddRailwayCrossingBarrier": ["crossing:barrier"],
-        "AddPathSurface": ["smoothness", "surface"],
-        "AddBuildingType": ["building"],
-        "AddPathSmoothness": ["smoothness"],
-        "AddCrossingType": ["crossing"],
-        "AddParkingType": ["parking"],
-        "AddFireHydrantType": ["fire_hydrant:type"],
-        "AddFireHydrantPosition": ["fire_hydrant:position"],
-        "AddRecyclingContainerMaterials": ["recycling:clothes", "recycling:glass"],
-        "AddBikeParkingCover": ["covered"],
-        "AddBikeParkingType": ["bicycle_parking"],
-        "AddCyclewaySegregation": ["segregated"],
-        "AddForestLeafType": ["leaf_type"],
-        "AddHandrail": ["handrail"],
-        "AddBusStopShelter": ["shelter"],
-        "AddBridgeStructure": ["bridge:structure"],
-        "AddTracktype": ["tracktype"],
+        "AddOpeningHours": ["opening_hours", "cuisine", "opening_hours:signed", "check_date:opening_hours"],
         "AddBenchStatusOnBusStop": ["bench"],
+        "AddRoadWidth": ["width", "source:width"],
+        "AddTracktype": ["tracktype"],
+        "AddFireHydrantDiameter": ["fire_hydrant:diameter"],
+        "AddRoadSurface": ["surface"],
+        "AddBuildingType": ["building"],
+        "AddRoadSmoothness": ["smoothness"],
+        "AddCycleway": ["cycleway:both"],
+        "AddParkingAccess": ["access"],
+        "AddParkingFee": ["fee"],
+        "AddPathSmoothness": ["smoothness"],
+        "AddTrafficSignalsSound": ["traffic_signals:sound"],
+        "AddBusStopShelter": ["shelter"],
+        "AddStepsIncline": ["incline"],
+        "AddCyclewayWidth": ["cycleway:width"],
+        "AddStepsRamp": ["ramp"],
+        "AddWheelchairAccessPublicTransport": ["wheelchair"],
+        "AddCrossingType": ["crossing"],
+        "AddWayLit": ["lit"],
         "AddCrossingIsland": ["crossing:island"],
-        "AddTactilePavingCrosswalk": ["tactile_paving"],
+        "AddAddressStreet": ["addr:street"],
+        "AddBicycleBarrierType": ["cycle_barrier"],
+        "AddSeating": ["outdoor_seating", "indoor_seating"],
+        "AddLanes": ["lanes"],
     }
 
 def only_check_dates_here(affected_keys):
@@ -417,11 +401,13 @@ def is_edit_limited_to_this_keys(affected_keys, expected):
             return False
     return True
 
-def is_shop_retagging(affected_keys):
+def is_shop_retagging(affected_keys, deleted_keys):
     # note that shop=clothes name=Foobar -> shop=clothes also counts
     for key in affected_keys:
-        if key in ['shop', 'name']:
+        if key in ['shop', 'amenity', 'name']:
             continue
+        return False
+    for key in deleted_keys:
         if is_one_of_shop_associated_keyes_removed_on_replacement(key):
             continue
         return False
@@ -430,23 +416,33 @@ def is_shop_retagging(affected_keys):
 def affected_tags(entry, previous_entry):
     #print(previous_entry.tags)
     #print(entry.tags)
-    affected = []
+    affected = {
+        'modified': [],
+        'modified_details': [],
+        'added': [],
+        'removed': [],
+    }
     for key in entry.tags.keys():
         if key in previous_entry.tags.keys():
             if entry.tags[key] == previous_entry.tags[key]:
                 pass
             else:
                 #print("MODIFIED", key, "=", entry.tags[key], "to", key, "=", previous_entry.tags[key])
-                affected.append(key)
+                affected['modified'].append(key)
+                affected['modified_details'].append({
+                    'key': key,
+                    'old_value': previous_entry.tags[key],
+                    'new_value': entry.tags[key]
+                })
         else:
             #print("ADDED", key, "=", entry.tags[key])
-            affected.append(key)
+            affected['added'].append(key)
     for key in previous_entry.tags.keys():
         if key in entry.tags:
             pass
         else:
             #print("REMOVED", key, "=", previous_entry.tags[key])
-            affected.append(key)
+            affected['removed'].append(key)
     return affected
 
 def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
