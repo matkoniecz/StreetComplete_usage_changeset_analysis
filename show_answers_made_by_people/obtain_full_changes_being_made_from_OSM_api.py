@@ -157,7 +157,14 @@ def main():
             if edit_id % 1000 <= 2:
                 stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
             connection.commit()
-    #print(json.dumps(stats, default=str, indent=3))
+            if len(stats) % 10_000 == 0:
+                print("updating CSV file on", len(stats))
+                write_csv_file(stats)
+    connection.close()
+    print(todocount, 'unhandled entries')
+    write_csv_file(stats)
+
+def write_csv_file(stats):
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         for entry in stats:
@@ -169,8 +176,7 @@ def main():
                 else:
                     print("Missing day entry, skipping", entry["link"])
                     print(entry)
-    connection.close()
-    print(todocount, 'unhandled entries')
+
 
 def get_main_key_from_tags(tags):
     for potential_main_key in tag_knowledge.typical_main_keys():
