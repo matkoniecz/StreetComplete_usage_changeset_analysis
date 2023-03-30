@@ -83,6 +83,7 @@ def deserialize_element_list(serialized):
     return returned
 
 def selftest(cursor):
+    assert(is_any_of_expected_quests(["addr:housenumber"]))
     api = Api(url='https://openstreetmap.org')
     node = api.elements.get(Node, 25733488)
     dict = node.to_dict()
@@ -103,7 +104,14 @@ def selftest(cursor):
     node.to_dict()
 
     # edit and undo split into separate edits
-    analyse_history(cursor, api, '118933758', 'CheckExistence')
+    analyse_history(cursor, api, '118933758', 'CheckExistence', {})
+
+    changeset_metadata(cursor, api, 70867569)
+
+    assert(is_one_of_shop_associated_keyes_removed_on_replacement('cuisine') == True)
+    assert(is_one_of_shop_associated_keyes_removed_on_replacement('gibberish') == False)
+    assert(is_shop_retagging(['amenity', 'cuisine']) == True)
+
 
 def specific_test_cases(cursor):
     deleting_points = 133235020
@@ -115,7 +123,7 @@ def specific_test_cases(cursor):
 
     api = Api(url='https://openstreetmap.org')
 
-    analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence')
+    analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence', {})
 
 def main():
     connection = sqlite3.connect(database_filepath())
@@ -123,11 +131,13 @@ def main():
     create_table_if_needed(cursor)
     check_database_integrity(cursor)
     selftest(cursor)
+    connection.commit()
     specific_test_cases(cursor)
 
     api = Api(url='https://openstreetmap.org')
 
     stats = []
+    missing_tag_usage = {}
     todocount = 0
     with open('/media/mateusz/OSM_cache/changesets/sc_edits_list_from_2021-05-20_to_2023-02-20.csv') as csvfile:
         reader = csv.reader(csvfile)
@@ -139,11 +149,13 @@ def main():
             editor = row[1]
             quest_type = row[3]
             if quest_type == "CheckExistence":
-                stats += analyse_history(cursor, api, edit_id, quest_type)
+                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
             if quest_type == "AddOpeningHours":
-                stats += analyse_history(cursor, api, edit_id, quest_type)
+                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
             if quest_type == "AddFireHydrantDiameter":
-                stats += analyse_history(cursor, api, edit_id, quest_type)
+                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
+            if edit_id % 1000 <= 2:
+                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
             connection.commit()
     #print(json.dumps(stats, default=str, indent=3))
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv', 'w', newline='') as f:
@@ -155,6 +167,7 @@ def main():
                 if 'days' in entry:
                     writer.writerow([entry["quest_type"], entry["action"], entry["days"], entry["main_tag"], entry["link"]])
                 else:
+                    print("Missing day entry, skipping", entry["link"])
                     print(entry)
     connection.close()
     print(todocount, 'unhandled entries')
@@ -168,7 +181,7 @@ def get_main_key_from_tags(tags):
     print("main tag - failed to find for ", tags)
     return None
 
-def analyse_history(local_database_cursor, api, changeset_id, quest_type):
+def analyse_history(local_database_cursor, api, changeset_id, quest_type, missing_tag_usage):
     new_stats = []
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
@@ -198,11 +211,18 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                     if index != index_of_potential_duplicate:
                         if entry.changeset_id == potential_duplicate_entry.changeset_id: # new_stats != []
                             print()
+                            print(quest_type)
                             print(link)
                             print(changeset_link)
                             print("handle revert within single edit (just take latest action)")
                             new_stats.append({"quest_type": quest_type, "action": '????TODO', 'main_tag': None, 'link': link})
                             # TODO: handling do-revert-do_something_else (right now all three would be treated as reverts)
+                            print("our version:", index, "other version:", index_of_potential_duplicate)
+                            print("But it can be also way splitting, or moving objects and then aswering question...")
+                            if index < index_of_potential_duplicate:
+                                print("edit before final edit, lets skip it - but do not exit this function (or extract checking specific revision?)")
+                            else:
+                                print("final edit, lets handle it - but has it made change compared to the initial state? Or just reverted and updated last edit time?")
                             return new_stats
                         if entry.user_id == potential_duplicate_entry.user_id:
                             changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id).tags
@@ -213,18 +233,38 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                                     other_timestamp = datetime.strptime(potential_duplicate_entry.timestamp, utils.typical_osm_timestamp_format())
                                     if abs((timestamp - other_timestamp).days) < 2: # TODO check real data!
                                         print()
+                                        print("---------------------------------<")
+                                        print(quest_type)
+                                        print()
                                         print(link)
                                         print(changeset_link)
                                         print("Requires smarter check, possible revert")
                                         print("Is position the same?")
                                         print("Are tags the same?")
                                         print("If the same then it may be edit-revert-the same edit!")
+                                        print("Some may be the same due to this duplication bug")
                                         print(timestamp)
                                         print(other_timestamp)
                                         print(changeset_metadata(local_database_cursor, api, entry.changeset_id))
+                                        print(entry.tags)
+                                        latitude = None
+                                        longitude = None
+                                        if type(element).__name__.lower() == "node":
+                                            latitude = entry.latitude
+                                            longitude = entry.longitude
+                                        print(latitude, longitude)
+
                                         print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id))
+                                        print(potential_duplicate_entry.tags)
+                                        potential_duplicate_latitude = None
+                                        potential_duplicate_longitude = None
+                                        if type(element).__name__.lower() == "node":
+                                            potential_duplicate_latitude = potential_duplicate_entry.latitude
+                                            potential_duplicate_longitude = potential_duplicate_entry.longitude
+                                        print(potential_duplicate_latitude, potential_duplicate_longitude)
                                         # smarter checks: blocked by https://github.com/docentYT/osm_easy_api/issues/7 for now
                                         new_stats.append({"quest_type": quest_type, "action": '????TODO - the same user, assuming the same action', 'main_tag': None, 'link': link})
+                                        print(">---------------------------------")
                                         return new_stats
                 if index == 0:
                     new_stats.append({"quest_type": quest_type, "action": 'created', 'main_tag': get_main_key_from_tags(entry.tags), 'link': link})
@@ -269,8 +309,9 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                             for tag in tags_that_could_be_just_removed_in_addition:
                                 if tag in affected:
                                     affected.remove(tag)
-                            if affected == ["check_date:opening_hours"] or affected == ["check_date"] or affected == ["opening_hours:signed"] or affected == ['fire_hydrant:diameter:signed']:
+                            if only_check_dates_here(affected) or only_sign_presence_here(affected) or quest_type == "CheckExistence":
                                 #print("MARKED AS STILL EXISTING")
+                                # includes say fire_hydrant:diameter:signed
                                 new_stats.append({"quest_type": quest_type, "action": 'marked_as_surveyed', 'days': days, 'main_tag': main_tag, 'link': link})
                             elif affected == ['traffic_calming']:
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
@@ -284,14 +325,99 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type):
                             elif "disused:shop" in affected:
                                 # flipped shop type, probably
                                 new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})
+                            # AddSurface
+                            elif is_any_of_expected_quests(affected):
+                                new_stats.append({"quest_type": quest_type, "action": 'changed_data_tags', 'days': days, 'main_tag': main_tag, 'link': link})                            
                             else:
+                                print()
+                                print("NOT HANDLED", quest_type)
                                 print(link)
-                                print("NOT HANDLED")
-                                print(affected)
+                                print(changeset_link)
+                                if quest_type not in missing_tag_usage:
+                                    missing_tag_usage[quest_type] = set()
+                                for key in affected:
+                                    missing_tag_usage[quest_type].add(key)
+                                for key in missing_tag_usage.keys():
+                                    print(str(list(missing_tag_usage[key])) + ", # " + key)
+                                print()
                                 print()
                 #print("==============")
                 #print()
     return new_stats
+
+def is_any_of_expected_quests(affected_keys):
+    for group in expected_tag_groups():
+        if is_edit_limited_to_this_keys(affected_keys, group):
+            return True
+    return False
+
+
+def expected_tag_groups():
+    return [
+        ['highway', 'kerb'], # AddCrossing
+        ['shelter'], # AddBusStopShelter
+        ['lanes', 'lane_markings', 'lanes:forward', 'lanes:backward'], # AddLanes
+        ['crossing:barrier'], # AddRailwayCrossingBarrier
+        ['collection_times'], # AddPostboxCollectionTimes
+        ['segregated'], # AddCyclewaySegregation
+        ['step_count'], # AddStepCount
+        ['ramp:stroller', 'ramp'], # AddStepsRamp
+        ['traffic_signals:vibration'], # AddTrafficSignalsVibration
+        ['barrier', 'kerb'], # AddKerbHeight
+        ['button_operated'], # AddTrafficSignalsButton
+        ['handrail'], # AddHandrail
+        ['tracktype'], # AddTracktype
+        ['addr:street'], # AddAddressStreet
+        ['maxspeed', 'maxspeed:type'], # AddMaxSpeed
+        ['leaf_type'], # AddForestLeafType
+        ['bicycle_parking'], # AddBikeParkingType
+        ['traffic_signals:sound'], # AddTrafficSignalsSound
+        ["cycleway:right", "cycleway:left", "cycleway:both", 'cycleway:right:lane', 'cycleway:left:lane', 'cycleway:both:lane', 'cycleway:right:oneway', 'cycleway:left:oneway', 'cycleway:both:oneway', 'cycleway'], # AddCycleway
+        ["sidewalk"], # AddSidewalk
+        ["surface", 'surface:note', 'smoothness'], # AddPathSurface - but also path and pitch surfaces
+        ["addr:housenumber", 'nohousenumber'], # AddHousenumber
+        ["tactile_paving"],
+        ["building", "ruins"], # AddBuildingType
+        ["cycle_barrier"], # AddBicycleBarrierType
+        ["lit"],
+        ["sport"],
+        ["oneway"], # AddSuspectedOneway
+        ["bin"],
+        ['shoulder'], # AddShoulder
+        ['width', 'source:width'], # AddRoadWidth
+        ['backrest'], # AddBenchBackrest
+        ['access'], # AddParkingAccess
+        ['access'], # AddPlaygroundAccess
+        ['covered'], # AddPicnicTableCover
+        ['building:levels', 'roof:levels'], # AddBuildingLevels
+        ['incline'], # AddStepsIncline
+        ['crossing:island'], # AddCrossingIsland
+        ['crossing'], # AddCrossingType
+        ['roof:shape'], # AddRoofShape
+        ['parking'], # AddParkingType
+        ['bench'], # AddBenchStatusOnBusStop
+        ['fire_hydrant:position'], # AddFireHydrantPosition
+    ]
+
+def only_check_dates_here(affected_keys):
+    for key in affected_keys:
+        if "check_date" not in key:
+            return False
+    return True
+
+def only_sign_presence_here(affected_keys):
+    for key in affected_keys:
+        if ":sign" not in key:
+            return False
+    return True
+
+def is_edit_limited_to_this_keys(affected_keys, expected):
+    if affected_keys == []:
+        return False
+    for key in affected_keys:
+        if key not in expected:
+            return False
+    return True
 
 def is_shop_retagging(affected_keys):
     # note that shop=clothes name=Foobar -> shop=clothes also counts
@@ -357,13 +483,19 @@ def changeset_metadata(local_database_cursor, api, changeset_id):
     entries = local_database_cursor.fetchall()
     if len(entries) == 1:
         return Changeset.from_dict(json.loads(entries[0][0]))
+    if len(entries) > 1:
+        print(len(entries))
+        print(entries)
+        raise
 
     print("MAKING A CALL TO OSM API - api.changeset.download(", changeset_id, ")")
     downloaded = api.changeset.get(changeset_id)
 
     serialized = json.dumps(downloaded.to_dict(), default=str, indent=3)
     local_database_cursor.execute("INSERT INTO changeset_metadata_api_cache VALUES (:changeset_id, :serialized)", {"changeset_id": changeset_id, 'serialized': serialized})
-    return serialized
+
+    return changeset_metadata(local_database_cursor, api, changeset_id)
+    #return Changeset.from_dict(downloaded.to_dict())
 
 def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_easy_api_object):
     element_type_label = type(element_as_osm_easy_api_object).__name__.lower()
@@ -387,8 +519,7 @@ def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_
 
 def prepare_history_api_call_function(api, element_as_osm_easy_api_object):
     def execute_api_call():
-        print("MAKING A CALL TO OSM API - api.elements.history(", element_as_osm_easy_api_object.__class__, ",",  element_as_osm_easy_api_object.id, ")")
-        print(element_as_osm_easy_api_object.__class__, element_as_osm_easy_api_object.id)
+        print("MAKING A CALL TO OSM API - api.elements.history(", type(element_as_osm_easy_api_object).__name__.lower(), ",",  element_as_osm_easy_api_object.id, ")")
         return api.elements.history(element_as_osm_easy_api_object.__class__, element_as_osm_easy_api_object.id)
     return execute_api_call
 
