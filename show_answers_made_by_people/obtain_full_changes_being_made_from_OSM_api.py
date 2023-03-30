@@ -170,13 +170,13 @@ def main():
             connection.commit()
             if len(stats) % 10_000 == 0:
                 print("updating CSV file on", len(stats))
-                write_csv_file(stats)
+                write_csv_file(stats, "in_progress")
     connection.close()
     print(todocount, 'unhandled entries')
-    write_csv_file(stats)
+    write_csv_file(stats, "some")
 
-def write_csv_file(stats):
-    with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv', 'w', newline='') as f:
+def write_csv_file(stats, title):
+    with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/' + title + '.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         for entry in stats:
             if entry['action'] == '????TODO':
