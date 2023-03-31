@@ -478,6 +478,7 @@ def expected_tag_groups():
         "AddVegan": ["diet:vegan"],
         "AddMaxWeight": ["maxweight"],
         "AddMaxSpeed": ["maxspeed", "maxspeed:type"],
+        "AddCampDrinkingWater": ["drinking_water"],
     }
 
 def only_check_dates_or_sign_presence_here(affected_keys):
