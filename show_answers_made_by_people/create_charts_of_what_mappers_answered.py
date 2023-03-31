@@ -16,6 +16,9 @@ def show_data_for_quest(quest):
     plt.style.use('fivethirtyeight')
     plt.grid(True)
 
+    # if you are trying to use it and you are irritated by hardcoded values: feel free to make PR moving
+    # them to a config file. For now I assume that I am sole person 
+    # there is also /media/mateusz/OSM_cache/cache-for-osm-editing-api/in_progress.csv
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/some.csv') as csvfile:
         reader = csv.reader(csvfile)
         #headers = next(reader, None)
