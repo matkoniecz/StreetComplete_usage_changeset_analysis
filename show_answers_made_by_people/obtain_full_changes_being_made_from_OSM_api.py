@@ -3,6 +3,7 @@ import csv
 import sqlite3
 import json
 import re
+import requests
 from osm_easy_api.data_classes import Node, Way, Relation, Changeset, OsmChange, Action, Tags
 
 from osm_easy_api.diff import diff_parser
@@ -123,6 +124,19 @@ def selftest(cursor):
             # is not valid, see opening hours: if check date is there, then it will be updated
             raise Exception("not expected")
 
+    nsi_url = "https://raw.githubusercontent.com/osmlab/name-suggestion-index/main/dist/presets/nsi-id-presets.json"
+    r = requests.get(url=nsi_url)
+    nsi_data = r.json()
+    nsi_data = nsi_data['presets']
+    missing = []
+    for entry in nsi_data:
+        for key in nsi_data[entry]['addTags']:
+            if(is_any_key_added_by_nsi(key) == False):
+                if key not in missing:
+                    missing.append(key)
+    if len(missing) > 0:
+        print(missing)
+        raise Exception("NSI added new keys")
 
 def specific_test_cases(cursor):
     deleting_points = 133235020
@@ -483,17 +497,115 @@ def is_edit_limited_to_this_keys(affected_keys, expected):
 
 def is_shop_retagging(affected_keys, deleted_keys):
     # note that shop=clothes name=Foobar -> shop=clothes also counts
+    main_found = False
     for key in affected_keys:
-        if key in ['shop', 'amenity', 'healthcare', 'name', 'brand', 'brand:wikidata', 'cuisine']:
-            # note https://www.openstreetmap.org/node/429346232/history
-            # SC is using NSI and NSI preset has some cases with say cuisine...
+        if is_main_key_added_by_nsi(key):
+            main_found = True
             continue
+        if is_secondary_key_added_by_nsi(key):
+            main_found = True
+            continue
+        return False
+    if main_found == False:
         return False
     for key in deleted_keys:
         if is_one_of_shop_associated_keyes_removed_on_replacement(key):
             continue
         return False
     return True
+
+def is_any_key_added_by_nsi(key):
+    return is_main_key_added_by_nsi(key) or is_secondary_key_added_by_nsi(key)
+
+def is_main_key_added_by_nsi(key):
+    return key in ['shop', 'amenity', 'healthcare', 'craft', 'leisure', 'office']
+
+def is_secondary_key_added_by_nsi(key):
+    # note https://www.openstreetmap.org/node/429346232/history
+    # SC is using NSI and NSI preset has some cases with say cuisine...
+    # https://github.com/osmlab/name-suggestion-index/blob/main/dist/presets/nsi-id-presets.json
+    # https://raw.githubusercontent.com/osmlab/name-suggestion-index/main/dist/presets/nsi-id-presets.json
+    return key in [
+        'barnd:en', # TODO NSI bug, see https://github.com/u-spec-png/name-suggestion-index/blob/main/data/brands/amenity/bank.json#L8384
+        'name', 'brand', 'brand:wikidata', 'cuisine', 'animal_boarding',
+        'operator', 'operator:wikidata', 'network', 'network:wikidata', 'operator:short',
+        'brand:en', 'brand:fa', 'brand:he', 'brand:ru', 'brand:sr', 'brand:sr-Latn', 'name:en',
+        'name:sr', 'name:sr-Latn', 'official_name', 'short_name', 'official_name:en', 'name:bg',
+        'brand:ur', 'name:ur', 'brand:ar', 'name:ar', 'brand:ca', 'brand:es', 'name:ca', 'name:es',
+        'brand:fr', 'name:fr', 'name:el', 'name:tr', 'name:kk', 'name:ru', 'official_name:kk',
+        'official_name:ru', 'brand:de', 'name:de', 'short_name:de', 'short_name:fr',
+        'official_name:fr', 'short_name:en', 'alt_name', 'alt_name:lb', 'official_name:vi',
+        'official_name:ar', 'brand:id', 'brand:hi', 'brand:kn', 'brand:pa', 'brand:pnb', 'name:hi',
+        'name:kn', 'name:pa', 'name:pnb', 'brand:ta', 'name:ta', 'name:zh', 'name:zh-Hans',
+        'name:zh-Hant', 'brand:bg', 'short_name:bg', 'brand:it', 'name:it', 'short_name:it',
+        'name:mk', 'old_name', 'brand:zh', 'brand:ko', 'name:ko', 'alt_name:en', 'brand:ja',
+        'name:ja', 'name:hr', 'brand:el', 'short_name:el', 'brand:be', 'name:be', 'alt_name:ru',
+        'brand:uk', 'name:uk', 'full_name', 'full_name:en', 'official_name:uk', 'short_name:uk',
+        'brand:be-tarask', 'name:be-tarask', 'brand:mn', 'name:mn', 'short_name:ru', 'brand:mk',
+        'short_name:mk', 'name:he', 'name:fa', 'name:ks', 'name:sd', 'brand:bn', 'name:bn',
+        'brand:th', 'name:th', 'name:ko-Latn', 'name:nan', 'name:nan-HJ', 'name:nan-POJ',
+        'name:nan-TL', 'brand:zh-Hans', 'brand:zh-Hant', 'brand:pt', 'name:pt', 'name:hak',
+        'food', 'sport', 'bicycle_rental', 'fee', 'operator:type', 'official_name:ja',
+        'operator:en', 'operator:ja', 'access', 'network:en', 'network:ja', 'network:uk',
+        'authentication:app', 'rental', 'network:zh', 'network:ru', 'network:fa', 'operator:zh',
+        'nerwork:zh', 'takeaway', 'name:vi', 'drive_through', 'alt_name:vi', 'brand:vi',
+        'int_name', 'alt_name:he', 'alt_name:zh', 'alt_name:ja', 'brand:short', 'after_school',
+        'grades', 'nursery', 'preschool', 'healthcare:speciality', 'delivery', 'diet:kosher',
+        'short_name:ja', 'diet:vegan', 'diet:halal', 'diet:vegetarian', 'alt_name:hi',
+        'alt_name:pa', 'alt_name:pnb', 'alt_name:ur', 'drive_in', 'opening_hours', 'brand:nan',
+        'brand:nan-HJ', 'brand:nan-POJ', 'brand:nan-TL', 'ref:vatin', 'hgv', 'fuel:biogas',
+        'fuel:discount', 'fuel:LH2', 'payment:cash', 'payment:cfn', 'payment:credit_cards',
+        'payment:debit_cards', 'fuel:h70', 'gambling', 'coffee', 'internet_access:fee',
+        'isced:level', 'max_age', 'min_age', 'brand:ja-Hira', 'brand:ja-Latn', 'language:en',
+        'name:ja-Hira', 'name:ja-Latn', 'language:es', 'short_name:ja-Hira', 'short_name:ja-Latn',
+        'alt_name:ja-Latn', 'language:ja', 'language:ko', 'parcel_mail_in', 'parcel_pickup',
+        'operator:nan', 'operator:nan-HJ', 'operator:nan-POJ', 'operator:nan-TL', 'operator:zh-Hans',
+        'operator:zh-Hant', 'operator:de', 'operator:fr', 'operator:it', 'operator:rm', 'alt_name:bg',
+        'payment:alipay_HK', 'payment:octopus', 'payment:payme', 'payment:unionpay', 'payment:wechat',
+        'wheelchair', 'brand:ka', 'name:ka', 'brewery', 'brewery:wikidata', 'microbrewery',
+        'drink:palm_wine', 'name:wikidata', 'recycling_type', 'recycling:cans', 'recycling:glass_bottles',
+        'recycling:plastic_bottles', 'recycling:mobile_phones', 'recycling:clothes', 'recycling:shoes',
+        'recycling:low_energy_bulbs', 'name:pronunciation', 'recycling:bags', 'recycling:toys',
+        'recycling:books', 'owner', 'owner:en', 'owner:wikidata', 'owner:zh', 'owner:zh-Hans', 'owner:zh-Hant',
+        'reservation', 'diet:meat', 'oven', 'breakfast', 'alcohol', 'brand:zn', 'brand:ug', 'name:ug',
+        'brand:yue', 'name:yue', 'social_centre:for', 'social_facility', 'social_facility:for',
+        'brand:lb', 'operator:lb', 'healthcare:counselling', 'healthcare:for', 'training',
+        'drink:soft_drink', 'vending', 'fuel:lpg', 'drink:cola', 'network:guid', 'network:short',
+        'bin', 'drink:brewery', 'drink:water', 'drink:tea', 'drink:milk', 'club', 'electronics_repair',
+        'name:cs', 'name:sk', 'emergency', 'donation:compensation', 'blood:plasma', 'highway', 'landuse',
+        'residential', 'dance:teaching', 'female', 'bar', 'indoor', 'insurance', 'official_name:ja-Latn',
+        'agrarian', 'pastry', 'alt_name:ko', 'beauty', 'seamark:small_craft_facility:category',
+        'seamark:type', 'books', 'second_hand', 'butcher', 'addr:province', 'service:bicycle:repair',
+        'service:bicycle:retail', 'service:vehicle:transmission', 'service:vehicle:body_repair',
+        'service:vehicle:painting', 'service:vehicle:glass', 'clothes', 'organic', 'self_service',
+        'name:pl', 'payment:app', 'duty_free', 'brand:ms-Arab', 'name:ms-Arab', 'operator:th', 'operator:ko',
+        'name:hu', 'furniture', 'male', 'brand:offical_name', 'fair_trade', 'official_name:zh',
+        'official_name:zh-Hans', 'official_name:zh-Hant', 'motorcycle:clothes', 'motorcycle:parts',
+        'tobacco', 'shoes', 'brand:rs', 'name:np', 'bulk_purchase', 'origin', 'zero_waste',
+        'alt_name:ar', 'short_name:nan', 'short_name:nan-HJ', 'short_name:nan-POJ', 'short_name:nan-TL',
+        'short_name:zh', 'operator:bg', 'trade', 'tourism', 'internet_access', 'internet_access:operator',
+        'internet_access:ssid', 'information', 'map_size', 'map_type', 'country', 'flag:name', 'flag:type',
+        'flag:wikidata', 'man_made', 'subject', 'subject:wikidata', 'flag:colour', 'bicycle_parking',
+        'bike_ride', 'urgent_care', 'operator:es', 'name:ms', 'operator:official', 'operator:id',
+        'operator:he', 'operator:cy', 'ref:isil', 'operator:mi', 'operator:af', 'operator:xh',
+        'operator:ga', 'building', 'parking', 'park_ride', 'operator:ar', 'operator:ml',
+        'operator:ne', 'operator:pt', 'alt_name:fr', 'operator:hy', 'operator:uk', 'operator:el',
+        'operator:be', 'operator:ru', 'colour', 'denomination', 'religion', 'toilets:disposal',
+        'currency:PLN', 'payment:coins', 'payment:contactless', 'payment:maestro', 'payment:mastercard',
+        'payment:mastercard_electronic', 'payment:notes', 'payment:v_pay', 'payment:visa',
+        'payment:visa_electron', 'payment:electronic_purses', 'payment:cards', 'boundary',
+        'ownership', 'protected', 'operator:short:en', 'operator:short:zh', 'payment:license_plate',
+        'payment:txtag', 'payment:ez_tag', 'payment:tolltag', 'industrial', 'operator:ka', 'operator:or',
+        'addr:state', 'operator:bn', 'tower:type', 'tower:construction', 'communication:mobile_phone',
+        'substance', 'street_cabinet', 'product', 'natural', 'water', 'government', 'pipeline', 'power',
+        'frequency', 'substation', 'operator:short:zh-Hans', 'operator:short:zh-Hant', 'operator:short:pt',
+        'route', 'type', 'operator:hak', 'name:signed', 'telecom', 'ferry', 'public_transport', 'bus',
+        'network:no', 'network:el', 'network:ko', 'network:nan', 'network:nan-HJ', 'network:nan-POJ',
+        'network:nan-TL', 'operator:not', 'network:zh-yue', 'network:metro', 'network:metro:wikidata',
+        'public_transport:network', 'public_transport:network:en', 'public_transport:network:wikidata',
+        'public_transport:network:zh', 'railway:network', 'railway:network:en', 'railway:network:wikidata',
+        'railway:network:zh', 'network:zh-Hans', 'network:zh-Hant', 'network:pt', 'network:es', 'network:eu',
+        'operator:eu', 'network:short_name']
 
 def affected_tags(entry, previous_entry):
     #print(previous_entry.tags)
