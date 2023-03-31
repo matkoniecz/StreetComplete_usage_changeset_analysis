@@ -149,7 +149,6 @@ def main():
 
     stats = []
     missing_tag_usage = {}
-    todocount = 0
     with open('/media/mateusz/OSM_cache/changesets/sc_edits_list_from_2021-05-20_to_2023-02-20.csv') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader, None)
@@ -172,14 +171,14 @@ def main():
                 print("updating CSV file on", len(stats))
                 write_csv_file(stats, "in_progress")
     connection.close()
-    print(todocount, 'unhandled entries')
     write_csv_file(stats, "some")
 
 def write_csv_file(stats, title):
+    todocount = 0
     with open('/media/mateusz/OSM_cache/cache-for-osm-editing-api/' + title + '.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         for entry in stats:
-            if entry['action'] == '????TODO':
+            if '????TODO' in entry['action']:
                 todocount += 1
             else:
                 if 'days' in entry:
@@ -187,6 +186,7 @@ def write_csv_file(stats, title):
                 else:
                     print("Missing day entry, skipping", entry["link"])
                     print(entry)
+    print(todocount, 'unhandled entries')
 
 
 def get_main_key_from_tags(tags):
