@@ -97,7 +97,7 @@ def show_data_for_quest(quest):
                 plt.bar(y_pos, data, align='center', alpha=0.5)
                 plt.xticks(y_pos, objects)
                 plt.ylabel('Value')
-                title = main_tag + " " + str(int(ratio*100)) + "." + str(int(ratio*1000)%10) + "% got only check data changed, sample " + str(sample)
+                title = main_tag + " " + '{0:.2f}'.format(ratio) + "% got only check data changed, sample " + str(sample)
                 print(title)
                 plt.title(title)
                 plt.savefig(main_tag + '.png')
