@@ -12,6 +12,8 @@ from osm_bot_abstraction_layer import utils
 import time
 import osm_bot_abstraction_layer.tag_knowledge as tag_knowledge
 
+from xml.etree import ElementTree
+
 # https://github.com/docentYT/osm_easy_api
 """
 
@@ -86,6 +88,16 @@ def deserialize_element_list(serialized):
 def selftest(cursor):
     assert(is_any_of_expected_quests(["addr:housenumber"]))
     api = Api(url='https://openstreetmap.org')
+
+    url = "https://api.openstreetmap.org/api/0.6/way/250066046/history"
+    response = requests.get(url=url)
+    print(response.content)
+    print(response.status_code)
+    #print (dir(response))
+    api.elements.history(Way, 250066046)
+    failed_once = api.elements.get(Way, 250066046)
+    history_api_call(api, failed_once)
+
     node = api.elements.get(Node, 25733488)
     dict = node.to_dict()
     node_from_dict = Node.from_dict(dict)
@@ -715,8 +727,21 @@ def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_
 
 def prepare_history_api_call_function(api, element_as_osm_easy_api_object):
     def execute_api_call():
-        print("MAKING A CALL TO OSM API - api.elements.history(", type(element_as_osm_easy_api_object).__name__.lower(), ",",  element_as_osm_easy_api_object.id, ")")
-        return api.elements.history(element_as_osm_easy_api_object.__class__, element_as_osm_easy_api_object.id)
+        while True:
+            try:
+                print("MAKING A CALL TO OSM API - api.elements.history(", type(element_as_osm_easy_api_object).__name__.lower(), ",",  element_as_osm_easy_api_object.id, ")")
+                return api.elements.history(element_as_osm_easy_api_object.__class__, element_as_osm_easy_api_object.id)
+            except ElementTree.ParseError: # https://github.com/docentYT/osm_easy_api/issues/9
+                url = "https://api.openstreetmap.org/api/0.6/" + type(element_as_osm_easy_api_object).__name__.lower() + "/" + str(element_as_osm_easy_api_object.id) + "/history"
+                response = requests.get(url=url)
+                print(response)
+                print(response.status_code)
+                # https://github.com/zerebubuth/openstreetmap-cgimap/blob/master/src/process_request.cpp#L521
+                # https://github.com/zerebubuth/openstreetmap-cgimap/blob/3482ee87da44cd016c5de2b9dfb1cece663dd006/include/cgimap/rate_limiter.hpp#L1
+                # https://github.com/zerebubuth/openstreetmap-cgimap/blob/3482ee87da44cd016c5de2b9dfb1cece663dd006/src/rate_limiter.cpp#L4
+                print("RETRY! BUT FIRST SLEEP FOR 1H")
+                time.sleep(3600)
+                print("RETRY")
     return execute_api_call
 
 def history_api_call(api, element_as_osm_easy_api_object):
