@@ -522,6 +522,14 @@ def is_shop_retagging(affected_keys, deleted_keys):
     for key in deleted_keys:
         if is_one_of_shop_associated_keyes_removed_on_replacement(key):
             continue
+        if key in [ # LAST_CHECK_DATE_KEYS
+            "check_date",
+            "lastcheck",
+            "last_checked",
+            "survey:date",
+            "survey_date",
+        ]:
+            continue
         return False
     return True
 
