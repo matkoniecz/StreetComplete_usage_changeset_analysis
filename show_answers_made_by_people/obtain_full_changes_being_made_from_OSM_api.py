@@ -545,7 +545,10 @@ def is_secondary_key_added_by_nsi(key):
     # https://github.com/osmlab/name-suggestion-index/blob/main/dist/presets/nsi-id-presets.json
     # https://raw.githubusercontent.com/osmlab/name-suggestion-index/main/dist/presets/nsi-id-presets.json
     return key in [
-        'barnd:en', # TODO NSI bug, see https://github.com/u-spec-png/name-suggestion-index/blob/main/data/brands/amenity/bank.json#L8384
+        'barnd:en', # NSI bug, see https://github.com/osmlab/name-suggestion-index/commit/8e66b7ee87cc7ced4ff9ff96a6b5606df410d69b
+        # for now still in https://raw.githubusercontent.com/osmlab/name-suggestion-index/main/dist/presets/nsi-id-presets.json
+        # may be necessary to keep it if ever used by StreetComplete mapper
+
         'name', 'brand', 'brand:wikidata', 'cuisine', 'animal_boarding',
         'operator', 'operator:wikidata', 'network', 'network:wikidata', 'operator:short',
         'brand:en', 'brand:fa', 'brand:he', 'brand:ru', 'brand:sr', 'brand:sr-Latn', 'name:en',
