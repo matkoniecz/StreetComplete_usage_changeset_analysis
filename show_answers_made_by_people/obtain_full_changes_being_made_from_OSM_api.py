@@ -190,28 +190,26 @@ def main():
                 continue
             editor = row[1]
             quest_type = row[3]
-            if quest_type == "CheckExistence":
+            if quest_type in ["CheckExistence", "AddOpeningHours", "AddFireHydrantDiameter"]:
                 stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
-            elif quest_type == "AddOpeningHours":
-                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
-            #elif quest_type == "AddFireHydrantDiameter":
-            #    stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
-            elif edit_id % 1000 <= 2:
                 stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
             else:
                 skipped += 1
             connection.commit()
             if edit_id % 2000 == 0:
-                print()
-                #print("out of", edit_count, "processed", processed, "inluding", skipped, "skipped")
-                percent_done = (processed - skipped) * 100 / (edit_count - skipped)
-                print('{0:.2f}'.format(percent_done), "% done", str(int((processed - skipped)/1000)) + "k out of " + str(int((edit_count - skipped)/1000)) + "k")
-                print()
+                show_progress(processed, skipped, edit_count)
             if len(stats) % 10_000 == 0:
                 print("updating CSV file on", len(stats))
                 write_csv_file(stats, "in_progress")
     connection.close()
     write_csv_file(stats, "some")
+
+def show_progress(processed, skipped, edit_count):
+    print()
+    #print("out of", edit_count, "processed", processed, "inluding", skipped, "skipped")
+    percent_done = (processed - skipped) * 100 / (edit_count - skipped)
+    print('{0:.2f}'.format(percent_done), "% done", str(int((processed - skipped)/1000)) + "k out of " + str(int((edit_count - skipped)/1000)) + "k")
+    print()
 
 def write_csv_file(stats, title):
     todocount = 0
@@ -375,7 +373,7 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                             else:
                                 print()
                                 print("NOT HANDLED", quest_type)
-                                print(streetcomplete_tagged)
+                                print(streetcomplete_tagged, change_summary['removed'])
                                 print(link)
                                 print(changeset_link)
                                 if quest_type not in missing_tag_usage:
