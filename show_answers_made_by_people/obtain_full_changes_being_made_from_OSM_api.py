@@ -824,7 +824,8 @@ def sleep_before_retry(error_summary):
 
 def create_table_if_needed(cursor):
     if "history_api_cache" in existing_tables(cursor):
-        print("history_api_cache table exists already, delete file with database to recreate")
+        pass
+        #print("history_api_cache table exists already, delete file with database to recreate")
     else:
         # for_changeset_id
         # this exists because for future changesets new history may be present and will need to be refetched
@@ -836,13 +837,15 @@ def create_table_if_needed(cursor):
         #cursor.execute("""CREATE INDEX idx_osm_data_area_identifier ON osm_data (area_identifier);""")
         #cursor.execute("""CREATE INDEX idx_osm_data_id_type ON osm_data (id, type);""")
     if "changeset_object_api_cache" in existing_tables(cursor):
-        print("changeset_object_api_cache table exists already, delete file with database to recreate")
+        pass
+        #print("changeset_object_api_cache table exists already, delete file with database to recreate")
     else:
         cursor.execute('''CREATE TABLE changeset_object_api_cache
                     (changeset_id integer, element_list text)''')
 
     if "changeset_metadata_api_cache" in existing_tables(cursor):
-        print("changeset_metadata_api_cache table exists already, delete file with database to recreate")
+        pass
+        #print("changeset_metadata_api_cache table exists already, delete file with database to recreate")
     else:
         cursor.execute('''CREATE TABLE changeset_metadata_api_cache
                     (changeset_id integer, serialized text)''')
