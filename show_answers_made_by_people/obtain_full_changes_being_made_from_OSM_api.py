@@ -172,7 +172,50 @@ def main():
     specific_test_cases(cursor)
 
     api = Api(url='https://openstreetmap.org')
+    #prefetch_data(connection, api, cursor, standard_is_quest_of_interest)
+    produce_statistics_info(connection, api, cursor, standard_is_quest_of_interest)
+    prefetch_data(connection, api, cursor, wider_is_quest_of_interest)
+    prefetch_data(connection, api, cursor, accept_all)
+    connection.close()
 
+def accept_all(quest_type, changeset_id):
+    return True
+
+def wider_is_quest_of_interest(quest_type, changeset_id):
+    if changeset_id < 117645886:
+        return False
+    if changeset_id % 1000 <= 4:
+        return True
+    return standard_is_quest_of_interest(quest_type, changeset_id)
+
+def standard_is_quest_of_interest(quest_type, changeset_id):
+    if changeset_id < 117645886:
+        return False
+    return quest_type in ["CheckExistence", "AddOpeningHours", "AddFireHydrantDiameter"]
+
+def prefetch_data(connection, api, cursor, is_quest_of_interest):
+    edit_count = 4553747
+    processed = 0
+    skipped = 0
+    # prefetch, with low CPU use
+    with open('/media/mateusz/OSM_cache/changesets/sc_edits_list_from_2021-05-20_to_2023-02-20.csv') as csvfile:
+        reader = csv.reader(csvfile)
+        headers = next(reader, None)
+        for row in reader:
+            changeset_id = int(row[0])
+            quest_type = row[3]
+            processed += 1
+            if is_quest_of_interest(quest_type, changeset_id):
+                for element in elements_edited_by_changeset(cursor, api, changeset_id):
+                    object_history(cursor, api, changeset_id, element)
+                connection.commit()
+            else:
+                skipped += 1
+                continue
+            if changeset_id % 2000 == 0:
+                show_progress(processed, skipped, edit_count)
+
+def produce_statistics_info(connection, api, cursor, is_quest_of_interest):
     stats = []
     missing_tag_usage = {}
     last_edit_id = 132770010
@@ -183,25 +226,21 @@ def main():
         reader = csv.reader(csvfile)
         headers = next(reader, None)
         for row in reader:
-            edit_id = int(row[0])
+            changeset_id = int(row[0])
             processed += 1
-            if edit_id < 117645886:
-                skipped += 1
-                continue
             editor = row[1]
             quest_type = row[3]
-            if quest_type in ["CheckExistence", "AddOpeningHours", "AddFireHydrantDiameter"]:
-                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
-                stats += analyse_history(cursor, api, edit_id, quest_type, missing_tag_usage)
+            if is_quest_of_interest(quest_type, changeset_id):
+                stats += analyse_history(cursor, api, changeset_id, quest_type, missing_tag_usage)
             else:
                 skipped += 1
+                continue
             connection.commit()
-            if edit_id % 2000 == 0:
+            if changeset_id % 2000 == 0:
                 show_progress(processed, skipped, edit_count)
             if len(stats) % 10_000 == 0:
                 print("updating CSV file on", len(stats))
                 write_csv_file(stats, "in_progress")
-    connection.close()
     write_csv_file(stats, "some")
 
 def show_progress(processed, skipped, edit_count):
