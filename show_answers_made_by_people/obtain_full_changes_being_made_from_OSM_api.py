@@ -96,7 +96,7 @@ def selftest(cursor):
     #print (dir(response))
     api.elements.history(Way, 250066046)
     failed_once = api.elements.get(Way, 250066046)
-    history_api_call(api, failed_once)
+    history_api_call(api, failed_once, "testing")
 
     node = api.elements.get(Node, 25733488)
     dict = node.to_dict()
@@ -119,7 +119,7 @@ def selftest(cursor):
     # edit and undo split into separate edits
     analyse_history(cursor, api, '118933758', 'CheckExistence', {}, [])
 
-    changeset_metadata(cursor, api, 70867569)
+    changeset_metadata(cursor, api, 70867569, "testing")
 
     assert(is_one_of_shop_associated_keyes_removed_on_replacement('cuisine') == True)
     assert(is_one_of_shop_associated_keyes_removed_on_replacement('gibberish') == False)
@@ -207,7 +207,7 @@ def prefetch_data(connection, api, cursor, is_quest_of_interest):
             processed += 1
             if is_quest_of_interest(quest_type, changeset_id):
                 for element in elements_edited_by_changeset(cursor, api, changeset_id):
-                    object_history(cursor, api, changeset_id, element)
+                    object_history(cursor, api, changeset_id, element, "prefetch data for " + quest_type + " https://openstreetmap.org/changeset/" + str(changeset_id))
                 connection.commit()
             else:
                 skipped += 1
@@ -278,8 +278,9 @@ def get_main_key_from_tags(tags):
 
 def analyse_history(local_database_cursor, api, changeset_id, quest_type, missing_tag_usage, missing_tag_usage_cases):
     new_stats = []
+    reason = "fetch data for describing " + quest_type + " https://openstreetmap.org/changeset/" + str(changeset_id)
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
-        history = object_history(local_database_cursor, api, changeset_id, element)
+        history = object_history(local_database_cursor, api, changeset_id, element, reason)
         link = "https://www.openstreetmap.org/" + type(element).__name__.lower() + "/" + str(element.id) + "/history"
         changeset_link = "https://www.openstreetmap.org/changeset/" + str(changeset_id)
         for index, entry in enumerate(history):
@@ -329,8 +330,8 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                             timestamp = datetime.strptime(entry.timestamp, utils.typical_osm_timestamp_format())
                             other_timestamp = datetime.strptime(potential_duplicate_entry.timestamp, utils.typical_osm_timestamp_format())
                             if abs((timestamp - other_timestamp).days) < 2: # TODO check real data!
-                                changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id).tags
-                                potential_duplicate_changeset_tags = changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id).tags
+                                changeset_tags = changeset_metadata(local_database_cursor, api, entry.changeset_id, reason).tags
+                                potential_duplicate_changeset_tags = changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id, reason).tags
                                 if 'comment' in potential_duplicate_changeset_tags:
                                     if changeset_tags['comment'] == potential_duplicate_changeset_tags['comment']:
                                         print()
@@ -346,7 +347,7 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                                         print("Some may be the same due to this duplication bug")
                                         print(timestamp)
                                         print(other_timestamp)
-                                        print(changeset_metadata(local_database_cursor, api, entry.changeset_id))
+                                        print(changeset_metadata(local_database_cursor, api, entry.changeset_id, reason))
                                         print(entry.tags)
                                         latitude = None
                                         longitude = None
@@ -355,7 +356,7 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                                             longitude = entry.longitude
                                         print(latitude, longitude)
 
-                                        print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id))
+                                        print(changeset_metadata(local_database_cursor, api, potential_duplicate_entry.changeset_id, reason))
                                         print(potential_duplicate_entry.tags)
                                         potential_duplicate_latitude = None
                                         potential_duplicate_longitude = None
@@ -729,7 +730,7 @@ def elements_edited_by_changeset(local_database_cursor, api, changeset_id):
     return element_list
 
 
-def changeset_metadata(local_database_cursor, api, changeset_id):
+def changeset_metadata(local_database_cursor, api, changeset_id, reason):
     local_database_cursor.execute("""
     SELECT serialized
     FROM changeset_metadata_api_cache
@@ -743,16 +744,16 @@ def changeset_metadata(local_database_cursor, api, changeset_id):
         print(entries)
         raise
 
-    print("MAKING A CALL TO OSM API - api.changeset.download(", changeset_id, ")")
+    print("MAKING A CALL TO OSM API - api.changeset.download(", changeset_id, ")", reason)
     downloaded = api.changeset.get(changeset_id)
 
     serialized = json.dumps(downloaded.to_dict(), default=str, indent=3)
     local_database_cursor.execute("INSERT INTO changeset_metadata_api_cache VALUES (:changeset_id, :serialized)", {"changeset_id": changeset_id, 'serialized': serialized})
 
-    return changeset_metadata(local_database_cursor, api, changeset_id)
+    return changeset_metadata(local_database_cursor, api, changeset_id, reason)
     #return Changeset.from_dict(downloaded.to_dict())
 
-def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_easy_api_object):
+def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_easy_api_object, reason):
     element_type_label = type(element_as_osm_easy_api_object).__name__.lower()
     #print(element_type_label)
     local_database_cursor.execute("""
@@ -765,7 +766,7 @@ def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_
     if len(entries) == 1:
         return deserialize_element_list(json.loads(entries[0][0]))
 
-    returned = history_api_call(api, element_as_osm_easy_api_object)
+    returned = history_api_call(api, element_as_osm_easy_api_object, reason)
     serialized = serialize_element_list(returned)
 
     known_changeset = 134282514 # we are fetching after this changeset was created and after all earlier changesets were closed
@@ -779,11 +780,11 @@ def object_history(local_database_cursor, api, for_changeset_id, element_as_osm_
 
     return returned
 
-def prepare_history_api_call_function(api, element_as_osm_easy_api_object):
+def prepare_history_api_call_function(api, element_as_osm_easy_api_object, reason):
     def execute_api_call():
         while True:
             try:
-                print("MAKING A CALL TO OSM API - api.elements.history(", type(element_as_osm_easy_api_object).__name__.lower(), ",",  element_as_osm_easy_api_object.id, ")")
+                print("MAKING A CALL TO OSM API - api.elements.history(", type(element_as_osm_easy_api_object).__name__.lower(), ",",  element_as_osm_easy_api_object.id, ")", reason)
                 return api.elements.history(element_as_osm_easy_api_object.__class__, element_as_osm_easy_api_object.id)
             except ElementTree.ParseError: # https://github.com/docentYT/osm_easy_api/issues/9
                 url = "https://api.openstreetmap.org/api/0.6/" + type(element_as_osm_easy_api_object).__name__.lower() + "/" + str(element_as_osm_easy_api_object.id) + "/history"
@@ -798,10 +799,10 @@ def prepare_history_api_call_function(api, element_as_osm_easy_api_object):
                 print("RETRY")
     return execute_api_call
 
-def history_api_call(api, element_as_osm_easy_api_object):
+def history_api_call(api, element_as_osm_easy_api_object, reason):
     while True:
         try:
-            api_call = prepare_history_api_call_function(api, element_as_osm_easy_api_object)
+            api_call = prepare_history_api_call_function(api, element_as_osm_easy_api_object, reason)
             return api_call()
         except requests.exceptions.ConnectionError as e:
             print(e)
