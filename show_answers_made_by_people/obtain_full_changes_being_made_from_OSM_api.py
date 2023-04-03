@@ -145,10 +145,11 @@ def selftest(cursor):
         for key in nsi_data[entry]['addTags']:
             if(is_any_key_added_by_nsi(key) == False):
                 if key not in missing:
-                    missing.append(key)
+                    if key not in ['advertising', 'railway']: # not expected to be added by SC as shop replacements
+                        missing.append(key)
     if len(missing) > 0:
         print(missing)
-        raise Exception("NSI added new keys")
+        raise Exception("NSI added new keys: " + str(missing))
 
 def specific_test_cases(cursor):
     deleting_points = 133235020
@@ -594,6 +595,7 @@ def is_secondary_key_added_by_nsi(key):
         'barnd:en', # NSI bug, see https://github.com/osmlab/name-suggestion-index/commit/8e66b7ee87cc7ced4ff9ff96a6b5606df410d69b
         # for now still in https://raw.githubusercontent.com/osmlab/name-suggestion-index/main/dist/presets/nsi-id-presets.json
         # may be necessary to keep it if ever used by StreetComplete mapper
+        'brand:wikipedia', # was in older version, some edits with it remain in old SC edits
 
         'name', 'brand', 'brand:wikidata', 'cuisine', 'animal_boarding',
         'operator', 'operator:wikidata', 'network', 'network:wikidata', 'operator:short',
@@ -673,7 +675,8 @@ def is_secondary_key_added_by_nsi(key):
         'public_transport:network', 'public_transport:network:en', 'public_transport:network:wikidata',
         'public_transport:network:zh', 'railway:network', 'railway:network:en', 'railway:network:wikidata',
         'railway:network:zh', 'network:zh-Hans', 'network:zh-Hant', 'network:pt', 'network:es', 'network:eu',
-        'operator:eu', 'network:short_name']
+        'operator:eu', 'network:short_name',
+        'cocktails']
 
 def affected_tags(entry, previous_entry):
     #print(previous_entry.tags)
