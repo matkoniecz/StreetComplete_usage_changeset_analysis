@@ -117,7 +117,7 @@ def selftest(cursor):
     node.to_dict()
 
     # edit and undo split into separate edits
-    analyse_history(cursor, api, '118933758', 'CheckExistence', {})
+    analyse_history(cursor, api, '118933758', 'CheckExistence', {}, [])
 
     changeset_metadata(cursor, api, 70867569)
 
@@ -160,7 +160,7 @@ def specific_test_cases(cursor):
 
     api = Api(url='https://openstreetmap.org')
 
-    analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence', {})
+    analyse_history(cursor, api, deletion_undone_in_the_separate_changeset, 'CheckExistence', {}, [])
 
 def main():
     connection = sqlite3.connect(database_filepath())
@@ -218,6 +218,7 @@ def prefetch_data(connection, api, cursor, is_quest_of_interest):
 def produce_statistics_info(connection, api, cursor, is_quest_of_interest):
     stats = []
     missing_tag_usage = {}
+    missing_tag_usage_cases = []
     last_edit_id = 132770010
     edit_count = 4553747
     processed = 0
@@ -231,7 +232,7 @@ def produce_statistics_info(connection, api, cursor, is_quest_of_interest):
             editor = row[1]
             quest_type = row[3]
             if is_quest_of_interest(quest_type, changeset_id):
-                stats += analyse_history(cursor, api, changeset_id, quest_type, missing_tag_usage)
+                stats += analyse_history(cursor, api, changeset_id, quest_type, missing_tag_usage, missing_tag_usage_cases)
             else:
                 skipped += 1
                 continue
@@ -275,7 +276,7 @@ def get_main_key_from_tags(tags):
     print("main tag - failed to find for ", tags)
     return None
 
-def analyse_history(local_database_cursor, api, changeset_id, quest_type, missing_tag_usage):
+def analyse_history(local_database_cursor, api, changeset_id, quest_type, missing_tag_usage, missing_tag_usage_cases):
     new_stats = []
     for element in elements_edited_by_changeset(local_database_cursor, api, changeset_id):
         history = object_history(local_database_cursor, api, changeset_id, element)
@@ -434,6 +435,11 @@ def analyse_history(local_database_cursor, api, changeset_id, quest_type, missin
                                     print('        "' + key + '": ' + str(known_affected[key]).replace("'", '"') + ",")
                                 print()
                                 print()
+                                this_case = {'streetcomplete_tagged': streetcomplete_tagged, 'removed': change_summary['removed']}
+                                if this_case not in missing_tag_usage_cases:
+                                    missing_tag_usage_cases.append(this_case)
+                                for case in missing_tag_usage_cases:
+                                    print(case)
                 #print("==============")
                 #print()
     return new_stats
