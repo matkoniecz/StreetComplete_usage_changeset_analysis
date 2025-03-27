@@ -4,6 +4,8 @@ It processes metadata of all changesets ever made and lists interesting ones (=m
 
 If you are looking for data about a single user or small number of users then [wielandb/StreetCompleteNumbers](https://github.com/wielandb/StreetCompleteNumbers) that queries OSM API for edits by specific user may be superior.
 
+If you just want statistics, then https://piebro.github.io/openstreetmap-statistics/#6773 may be sufficient for your use (they also have some other SC and OSM statistics, see dropdowns!)
+
 # Summary
 
 Explanation and variants in sections below.
